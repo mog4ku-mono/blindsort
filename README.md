@@ -13,7 +13,7 @@
 **Live demo:** https://YOURUSERNAME.github.io/YOUR-REPO/ <!-- GitHub Pages is set up already; replace if you host elsewhere -->
 **Demo video:** `docs/demo.mp4` (link it here once it exists)
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
-**Author:** Your Name
+**Author:** [mog4ku-mono](https://github.com/mog4ku-mono)
 
 This repository lives in the author's own GitHub account and is public on
 purpose. There is no `student.json` here and there should not be one: see
@@ -110,9 +110,18 @@ seconds.
 
 ## AI use
 
-If you used AI tools while building this, say so in a sentence or two and say
-where. Honest disclosure is the standard in this course and increasingly outside
-it.
+If you used AI while building this, say so here. Honest disclosure is the
+standard in this course and increasingly outside it, and reporting heavy use
+accurately costs you nothing.
+
+![Built with AI assistance](https://img.shields.io/badge/built%20with-AI%20assistance-0b5fff)
+
+Assistant used: ChatGPT + Claude. Roughly 50-60% of the code was AI-assisted; the rest
+(data model, layout decisions, sample data and assets) was written/adjusted and created by me.
+Full account in [AI-USAGE.md](AI-USAGE.md).
+
+Keep the detail in `AI-USAGE.md` rather than here. This section is the summary a
+visitor reads; that file is the record the badge is graded from.
 
 ## Licence
 
