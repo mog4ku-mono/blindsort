@@ -1,8 +1,8 @@
 # Every Flutter project has one of these. It names your app, sets the Dart
 # version it needs, and lists the packages you depend on.
 # Add a package with: flutter pub add <name>
-name: final_project
-description: My 6ADET final project.
+name: blindsort
+description: An accessibility-first Android file manager for blind and low-vision users.
 publish_to: "none"
 version: 1.0.0+1
 

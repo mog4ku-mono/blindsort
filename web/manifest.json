@@ -1,11 +1,11 @@
 {
-  "name": "My Final Project",
-  "short_name": "Final Project",
+  "name": "BlindSort",
+  "short_name": "BlindSort",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#6750A4",
-  "description": "My 6ADET final project.",
+  "theme_color": "#1565C0",
+  "description": "Accessibility-first file manager for blind and low-vision users.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false
 }
