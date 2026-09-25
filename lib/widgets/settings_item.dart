@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
+import '../theme.dart';
 
-/// One row on the Settings screen. The trailing widget is where the parent
-/// puts a Switch, a chevron, or nothing at all. The component does not know
-/// what the setting means, only how to present it.
+/// One row on the Settings screen. Filled teal circle with a white icon,
+/// matching the mockup. An outlined variant is available when the row is
+/// destructive or a reset action.
 class SettingsItem extends StatelessWidget {
   final String title;
   final String? description;
   final IconData icon;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final bool outlined;
 
   const SettingsItem({
     super.key,
@@ -19,6 +21,7 @@ class SettingsItem extends StatelessWidget {
     this.description,
     this.trailing,
     this.onTap,
+    this.outlined = false,
   });
 
   @override
@@ -27,27 +30,46 @@ class SettingsItem extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       label: description == null ? title : '$title, $description',
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
+      child: Card(
+        margin: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.xs,
         ),
-        leading: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer,
-            shape: BoxShape.circle,
+        elevation: 1,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+          leading: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: outlined ? Colors.white : kSecondaryTeal,
+              shape: BoxShape.circle,
+              border: outlined
+                  ? Border.all(color: kSecondaryTeal, width: 2)
+                  : null,
+            ),
+            child: Icon(
+              icon,
+              color: outlined ? kSecondaryTeal : Colors.white,
+              size: 22,
+            ),
+          ),
+          title: Text(
+            title,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: description == null
+              ? null
+              : Text(description!, style: theme.textTheme.labelSmall),
+          trailing: trailing ?? const Icon(Icons.chevron_right),
+          onTap: onTap,
         ),
-        title: Text(title, style: theme.textTheme.bodyMedium),
-        subtitle: description == null
-            ? null
-            : Text(description!, style: theme.textTheme.labelSmall),
-        trailing: trailing ?? const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }
