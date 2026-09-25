@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
+import '../constants/file_type_colors.dart';
 import '../models/file_item.dart';
 
 /// One row in a file list. Stateless: the parent owns the list and decides
@@ -20,39 +21,43 @@ class FileListItem extends StatelessWidget {
           '${file.name}, ${file.type}, '
           '${file.sizeMb} megabytes, opened ${_relativeDate(file.modifiedAt)}',
       child: ListTile(
-        leading: _typeBadge(theme),
+        leading: _typeBadge(),
         title: Text(file.name, style: theme.textTheme.bodyMedium),
         subtitle: Text(
           '${file.sizeMb} MB · ${_relativeDate(file.modifiedAt)}',
           style: theme.textTheme.labelSmall,
         ),
         trailing: file.isFavorite
-            ? Icon(Icons.star, color: theme.colorScheme.primary)
+            ? const Icon(Icons.star, color: Color(0xFF26A69A))
             : null,
         onTap: onTap,
       ),
     );
   }
 
-  /// Type badge: a small colored box carrying the file extension. Gives
-  /// TalkBack a stable, spoken word for the file type without relying on
-  /// color alone.
-  Widget _typeBadge(ThemeData theme) => Container(
-    width: 40,
-    height: 40,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      color: theme.colorScheme.secondaryContainer,
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Text(
-      file.type,
-      style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-    ),
-  );
+  /// Colored badge per extension so a low-vision user can tell types apart
+  /// without reading. Falls back to a neutral slate for unknown extensions.
+  Widget _typeBadge() {
+    final color = kFileTypeColors[file.type] ?? kDefaultTypeColor;
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        file.type,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
-  /// "Today", "Yesterday", or "N days ago". Kept simple on purpose; the
-  /// File Details screen has the full timestamp.
   String _relativeDate(DateTime dt) {
     final days = DateTime.now().difference(dt).inDays;
     if (days <= 0) return 'Today';
