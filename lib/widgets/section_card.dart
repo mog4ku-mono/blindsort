@@ -40,7 +40,7 @@ class SectionCard extends StatelessWidget {
                 ],
                 Text(title, style: theme.textTheme.headlineSmall),
                 const Spacer(),
-                if (trailing != null) trailing!,
+                ?trailing,
               ],
             ),
             const SizedBox(height: AppSpacing.sm),

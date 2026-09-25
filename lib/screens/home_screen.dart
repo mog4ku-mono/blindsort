@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
+import '../constants/category_colors.dart';
 import '../data/sample_files.dart';
 import '../models/file_item.dart';
 import '../widgets/category_navigation_item.dart';
@@ -146,28 +147,36 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
+      children: [
         CategoryNavigationItem(
           categoryName: 'Documents',
           icon: Icons.description_outlined,
+          tintColor: kDocumentsColors.tint,
+          foregroundColor: kDocumentsColors.foreground,
           itemCount: 126,
           onTap: _noop,
         ),
         CategoryNavigationItem(
           categoryName: 'Images',
           icon: Icons.image_outlined,
+          tintColor: kImagesColors.tint,
+          foregroundColor: kImagesColors.foreground,
           itemCount: 84,
           onTap: _noop,
         ),
         CategoryNavigationItem(
           categoryName: 'Videos',
           icon: Icons.video_library_outlined,
+          tintColor: kVideosColors.tint,
+          foregroundColor: kVideosColors.foreground,
           itemCount: 52,
           onTap: _noop,
         ),
         CategoryNavigationItem(
           categoryName: 'Audio',
           icon: Icons.music_note_outlined,
+          tintColor: kAudioColors.tint,
+          foregroundColor: kAudioColors.foreground,
           itemCount: 98,
           onTap: _noop,
         ),
