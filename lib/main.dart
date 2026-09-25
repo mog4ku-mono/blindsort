@@ -18,13 +18,18 @@ class BlindSortApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BlindSort',
-      debugShowCheckedModeBanner: false,
-      locale: DevicePreview.locale(context),
-      builder: DevicePreview.appBuilder,
-      theme: appTheme,
-      home: const HomeScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: AppState.themeMode,
+      builder: (context, mode, _) => MaterialApp(
+        title: 'BlindSort',
+        debugShowCheckedModeBanner: false,
+        locale: DevicePreview.locale(context),
+        builder: DevicePreview.appBuilder,
+        theme: appTheme,
+        darkTheme: darkAppTheme,
+        themeMode: mode,
+        home: const HomeScreen(),
+      ),
     );
   }
 }
