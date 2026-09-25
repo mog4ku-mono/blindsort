@@ -292,7 +292,9 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
             ),
             const SizedBox(width: AppSpacing.xs),
             Text(
-              '(First page)',
+              pages.length > 1
+                  ? '(Page ${_previewPage + 1} of ${pages.length})'
+                  : '(First page)',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -310,12 +312,52 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
           ),
           clipBehavior: Clip.antiAlias,
           child: SizedBox(
-            height: 200,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: pages.length,
-              onPageChanged: (i) => setState(() => _previewPage = i),
-              itemBuilder: (_, i) => _previewPageContent(theme, pages[i]),
+            height: 220,
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _pageController,
+                  itemCount: pages.length,
+                  physics: const PageScrollPhysics(),
+                  pageSnapping: true,
+                  onPageChanged: (i) => setState(() => _previewPage = i),
+                  itemBuilder: (_, i) => _previewPageContent(theme, pages[i]),
+                ),
+                if (_previewPage > 0)
+                  Positioned(
+                    left: 4,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: _previewArrow(
+                        theme,
+                        Icons.chevron_left,
+                        'Previous page',
+                        () => _pageController.previousPage(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (_previewPage < pages.length - 1)
+                  Positioned(
+                    right: 4,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: _previewArrow(
+                        theme,
+                        Icons.chevron_right,
+                        'Next page',
+                        () => _pageController.nextPage(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -350,6 +392,30 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _previewArrow(
+    ThemeData theme,
+    IconData icon,
+    String tooltip,
+    VoidCallback onTap,
+  ) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Material(
+        color: theme.colorScheme.surface.withValues(alpha: 0.85),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Icon(icon, size: 22, color: theme.colorScheme.secondary),
+          ),
+        ),
+      ),
     );
   }
 
