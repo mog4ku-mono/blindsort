@@ -6,13 +6,12 @@ import '../data/sample_files.dart';
 import '../models/file_item.dart';
 import '../state/app_state.dart';
 import '../widgets/category_navigation_item.dart';
+import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/section_card.dart';
 import 'file_browser_screen.dart';
 
-/// Home Dashboard. Entry point of the four-screen journey. Category tiles,
-/// View all links, and Browse All Files route to the File Browser; the gear
-/// opens Settings; long-pressing a file toggles its favorite state.
+/// Home Dashboard. Entry point of the four-screen journey.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -37,10 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<FileItem> get _favorites =>
       _allFiles.where((f) => AppState.isFavorite(f.id)).toList();
-
-  void _toggleFavorite(String id) {
-    setState(() => AppState.toggleFavorite(id));
-  }
 
   void _openBrowser({String? category}) {
     Navigator.push(
@@ -195,7 +190,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? null
                   : _recent[i].id;
             }),
-            onLongPress: () => _toggleFavorite(_recent[i].id),
+            onLongPress: () => showFileActions(
+              context,
+              _recent[i],
+              onChanged: () => setState(() {}),
+            ),
           ),
           if (i < _recent.length - 1)
             Divider(
@@ -233,7 +232,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? null
                         : _favorites[i].id;
                   }),
-                  onLongPress: () => _toggleFavorite(_favorites[i].id),
+                  onLongPress: () => showFileActions(
+                    context,
+                    _favorites[i],
+                    onChanged: () => setState(() {}),
+                  ),
                 ),
                 if (i < _favorites.length - 1)
                   Divider(
