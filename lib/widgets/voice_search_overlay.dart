@@ -24,7 +24,7 @@ Future<bool> showVoiceSearchOverlay(BuildContext context) async {
         ),
       );
     },
-    pageBuilder: (_, __, ___) => const _VoiceSearchScreen(),
+    pageBuilder: (_, _, _) => const _VoiceSearchScreen(),
   );
   return result ?? false;
 }
