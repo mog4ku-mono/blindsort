@@ -4,6 +4,7 @@ import '../constants/app_spacing.dart';
 import '../constants/category_colors.dart';
 import '../data/sample_files.dart';
 import '../models/file_item.dart';
+import '../state/app_state.dart';
 import '../widgets/category_navigation_item.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/section_card.dart';
@@ -21,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<FileItem> _allFiles = sampleFiles;
-  final Set<String> _favoriteIds = {};
   String? _selectedFileId;
   bool _entered = false;
 
@@ -36,20 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<FileItem> get _recent => _allFiles.take(3).toList();
 
   List<FileItem> get _favorites =>
-      _allFiles.where((f) => _isFavorite(f.id)).toList();
-
-  bool _isFavorite(String id) =>
-      _favoriteIds.contains(id) ||
-      _allFiles.firstWhere((f) => f.id == id).isFavorite;
+      _allFiles.where((f) => AppState.isFavorite(f.id)).toList();
 
   void _toggleFavorite(String id) {
-    setState(() {
-      if (_favoriteIds.contains(id)) {
-        _favoriteIds.remove(id);
-      } else {
-        _favoriteIds.add(id);
-      }
-    });
+    setState(() => AppState.toggleFavorite(id));
   }
 
   void _openBrowser({String? category}) {
@@ -58,12 +48,14 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (_) => FileBrowserScreen(initialCategory: category),
       ),
-    );
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   int _countFor(String category) {
     if (category == 'Favorites') {
-      return _allFiles.where((f) => _isFavorite(f.id)).length;
+      return _allFiles.where((f) => AppState.isFavorite(f.id)).length;
     }
     return _allFiles
         .where((f) => f.type.contains(category.substring(0, 3)))
@@ -196,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
         for (var i = 0; i < _recent.length; i++) ...[
           FileListItem(
             file: _recent[i],
-            isFavorite: _isFavorite(_recent[i].id),
+            isFavorite: AppState.isFavorite(_recent[i].id),
             isSelected: _selectedFileId == _recent[i].id,
             onTap: () => setState(() {
               _selectedFileId = _selectedFileId == _recent[i].id
@@ -385,8 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Voice Search hero card. Tapping it opens the File Browser; speech wiring
-/// lands in a later branch.
 class _VoiceSearchCard extends StatelessWidget {
   final VoidCallback onTap;
 
