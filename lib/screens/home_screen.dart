@@ -298,6 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => _openBrowser(category: 'Documents'),
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: CategoryNavigationItem(
             categoryName: 'Images',
@@ -308,6 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => _openBrowser(category: 'Images'),
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: CategoryNavigationItem(
             categoryName: 'Videos',
@@ -318,6 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => _openBrowser(category: 'Videos'),
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: CategoryNavigationItem(
             categoryName: 'Audio',

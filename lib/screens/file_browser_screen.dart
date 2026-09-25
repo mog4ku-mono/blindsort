@@ -484,6 +484,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             theme,
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: _categoryTile(
             'Images',
@@ -492,6 +493,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             theme,
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: _categoryTile(
             'Videos',
@@ -500,6 +502,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             theme,
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: _categoryTile(
             'Audio',
@@ -508,6 +511,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             theme,
           ),
         ),
+        const SizedBox(width: 6),
         Expanded(
           child: CategoryNavigationItem(
             categoryName: 'More',
