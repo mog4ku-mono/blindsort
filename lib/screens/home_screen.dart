@@ -10,6 +10,7 @@ import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/section_card.dart';
 import 'file_browser_screen.dart';
+import '../widgets/voice_search_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) {
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _startVoiceSearch() async {
+    final proceeded = await showVoiceSearchOverlay(context);
+    if (!mounted || !proceeded) return;
+    _openBrowser();
   }
 
   int _countFor(String category) {
@@ -141,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    _VoiceSearchCard(onTap: () => _openBrowser()),
+                    _VoiceSearchCard(onTap: _startVoiceSearch),
                     const SizedBox(height: AppSpacing.md),
                     _recentSection(),
                     const SizedBox(height: AppSpacing.xs),
