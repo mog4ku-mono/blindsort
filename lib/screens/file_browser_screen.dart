@@ -5,6 +5,7 @@ import '../constants/category_colors.dart';
 import '../constants/file_type_colors.dart';
 import '../data/sample_files.dart';
 import '../data/sample_folders.dart';
+import '../models/folder_item.dart';
 import '../widgets/category_navigation_item.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/folder_list_item.dart';
@@ -12,8 +13,8 @@ import '../widgets/folder_list_item.dart';
 enum SortMode { recent, name, size }
 
 /// File Browser. Categories tab shows tiles, folders, and files; Folders tab
-/// shows only folders. Category tiles filter the file list; tapping a folder
-/// narrows to that folder's files.
+/// shows only folders. Tapping a folder narrows the file list to that
+/// folder; long-pressing a file toggles its favorite state.
 class FileBrowserScreen extends StatefulWidget {
   const FileBrowserScreen({super.key});
 
@@ -28,11 +29,23 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   String? _selectedFileId;
   SortMode _sort = SortMode.recent;
 
+  /// Favorites toggled during this session. Persistence is a Week 3 task.
+  final Set<String> _favoriteIds = {};
+
+  /// Folders created during this session. Persistence is a Week 3 task.
+  final List<FolderItem> _customFolders = [];
+
+  List<FolderItem> get _allFolders => [...sampleFolders, ..._customFolders];
+
+  bool _isFavorite(String id) =>
+      _favoriteIds.contains(id) ||
+      sampleFiles.firstWhere((f) => f.id == id).isFavorite;
+
   List get _visibleFiles {
     var list = sampleFiles;
 
     if (_categoryFilter == 'Favorites') {
-      list = list.where((f) => f.isFavorite).toList();
+      list = list.where((f) => _isFavorite(f.id)).toList();
     } else if (_categoryFilter == 'Downloads') {
       list = list.where((f) => f.location.contains('Download')).toList();
     } else if (_categoryFilter != null) {
@@ -67,14 +80,76 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
-  int _countFor(String category) =>
-      sampleFiles.where((f) => kFileTypeCategory[f.type] == category).length;
+  int _countFor(String category) {
+    if (category == 'Favorites') {
+      return sampleFiles.where((f) => _isFavorite(f.id)).length;
+    }
+    return sampleFiles
+        .where((f) => kFileTypeCategory[f.type] == category)
+        .length;
+  }
 
   String get _breadcrumbText {
     if (_folderFilter != null) {
       return 'Internal Storage  ›  Documents  ›  $_folderFilter';
     }
     return 'Internal Storage  ›  Documents';
+  }
+
+  void _toggleFavorite(String id) {
+    setState(() {
+      if (_favoriteIds.contains(id)) {
+        _favoriteIds.remove(id);
+      } else {
+        _favoriteIds.add(id);
+      }
+    });
+  }
+
+  void _openFolder(String name) {
+    setState(() {
+      _folderFilter = _folderFilter == name ? null : name;
+      _tabIndex = 0;
+    });
+  }
+
+  Future<void> _createFolder(ThemeData theme) async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('New folder'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Folder name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+    setState(() {
+      _customFolders.add(
+        FolderItem(
+          id: 'custom-${DateTime.now().millisecondsSinceEpoch}',
+          name: name,
+          itemCount: 0,
+          modifiedAt: DateTime.now(),
+        ),
+      );
+    });
   }
 
   @override
@@ -135,22 +210,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               child: _tabs(theme),
             ),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 360),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.06),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                ),
-                child: _tabBody(theme),
-              ),
+              child: _tabIndex == 1
+                  ? _foldersTab(theme)
+                  : _categoriesTab(theme),
             ),
           ],
         ),
@@ -159,45 +221,74 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     );
   }
 
-  Widget _tabBody(ThemeData theme) {
-    if (_tabIndex == 1) {
-      return ListView(
-        key: const ValueKey('folders'),
-        padding: const EdgeInsets.all(AppSpacing.md),
+  Widget _foldersTab(ThemeData theme) => ListView(
+    padding: const EdgeInsets.all(AppSpacing.md),
+    children: [
+      Row(
         children: [
-          _sectionLabel(theme, 'Folders'),
-          const SizedBox(height: AppSpacing.sm),
-          _folderGroup(theme),
+          Text(
+            'Folders',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.secondary,
+            ),
+          ),
+          const Spacer(),
+          FilledButton.tonalIcon(
+            onPressed: () => _createFolder(theme),
+            icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+            label: const Text('New folder'),
+          ),
         ],
-      );
-    }
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      _folderGroup(theme),
+    ],
+  );
 
-    return ListView(
-      key: const ValueKey('categories'),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      children: [
-        _categoryRow(),
-        const SizedBox(height: AppSpacing.md),
-        if (_categoryFilter != null || _folderFilter != null) ...[
-          _activeFiltersRow(theme),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        _filesAndFoldersHeader(theme),
+  Widget _categoriesTab(ThemeData theme) => ListView(
+    padding: const EdgeInsets.all(AppSpacing.md),
+    children: [
+      _categoryRow(),
+      const SizedBox(height: AppSpacing.md),
+      if (_categoryFilter != null || _folderFilter != null) ...[
+        _activeFiltersRow(theme),
         const SizedBox(height: AppSpacing.sm),
-        if (_folderFilter == null) ...[
-          _folderGroup(theme),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        _fileGroup(theme),
       ],
-    );
-  }
-
-  Widget _sectionLabel(ThemeData theme, String text) => Text(
-    text,
-    style: theme.textTheme.headlineSmall?.copyWith(
-      color: theme.colorScheme.secondary,
-    ),
+      Row(
+        children: [
+          Text(
+            _folderFilter == null
+                ? 'Files & Folders'
+                : 'Files in $_folderFilter',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.secondary,
+            ),
+          ),
+          const Spacer(),
+          PopupMenuButton<SortMode>(
+            initialValue: _sort,
+            onSelected: (v) => setState(() => _sort = v),
+            child: Row(
+              children: [
+                Text(_sortLabel, style: theme.textTheme.labelSmall),
+                const Icon(Icons.expand_more, size: 18),
+              ],
+            ),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: SortMode.recent, child: Text('Recent')),
+              PopupMenuItem(value: SortMode.name, child: Text('Name')),
+              PopupMenuItem(value: SortMode.size, child: Text('Size')),
+            ],
+          ),
+        ],
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      if (_folderFilter == null) ...[
+        _folderGroup(theme),
+        const SizedBox(height: AppSpacing.sm),
+      ],
+      _fileGroup(theme),
+    ],
   );
 
   Widget _breadcrumb(ThemeData theme) => Padding(
@@ -325,14 +416,10 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       tintColor: selected ? colors.foreground : colors.tint,
       foregroundColor: selected ? Colors.white : colors.foreground,
       itemCount: _countFor(label),
-      onTap: () => _toggleFilter(label),
+      onTap: () => setState(() {
+        _categoryFilter = selected ? null : label;
+      }),
     );
-  }
-
-  void _toggleFilter(String category) {
-    setState(() {
-      _categoryFilter = _categoryFilter == category ? null : category;
-    });
   }
 
   void _showMoreCategories(ThemeData theme) {
@@ -413,33 +500,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     ],
   );
 
-  Widget _filesAndFoldersHeader(ThemeData theme) => Row(
-    children: [
-      Text(
-        _folderFilter == null ? 'Files & Folders' : 'Files',
-        style: theme.textTheme.headlineSmall?.copyWith(
-          color: theme.colorScheme.secondary,
-        ),
-      ),
-      const Spacer(),
-      PopupMenuButton<SortMode>(
-        initialValue: _sort,
-        onSelected: (v) => setState(() => _sort = v),
-        child: Row(
-          children: [
-            Text(_sortLabel, style: theme.textTheme.labelSmall),
-            const Icon(Icons.expand_more, size: 18),
-          ],
-        ),
-        itemBuilder: (context) => const [
-          PopupMenuItem(value: SortMode.recent, child: Text('Recent')),
-          PopupMenuItem(value: SortMode.name, child: Text('Name')),
-          PopupMenuItem(value: SortMode.size, child: Text('Size')),
-        ],
-      ),
-    ],
-  );
-
   Widget _folderGroup(ThemeData theme) => Container(
     decoration: BoxDecoration(
       color: theme.colorScheme.surface,
@@ -456,15 +516,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     clipBehavior: Clip.antiAlias,
     child: Column(
       children: [
-        for (var i = 0; i < sampleFolders.length; i++) ...[
+        for (var i = 0; i < _allFolders.length; i++) ...[
           FolderListItem(
-            folder: sampleFolders[i],
-            onTap: () => setState(() {
-              final name = sampleFolders[i].name;
-              _folderFilter = _folderFilter == name ? null : name;
-            }),
+            folder: _allFolders[i],
+            onTap: () => _openFolder(_allFolders[i].name),
           ),
-          if (i < sampleFolders.length - 1)
+          if (i < _allFolders.length - 1)
             Divider(
               height: 1,
               indent: AppSpacing.md,
@@ -507,12 +564,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           for (var i = 0; i < files.length; i++) ...[
             FileListItem(
               file: files[i],
+              isFavorite: _isFavorite(files[i].id),
               isSelected: _selectedFileId == files[i].id,
               onTap: () => setState(() {
                 _selectedFileId = _selectedFileId == files[i].id
                     ? null
                     : files[i].id;
               }),
+              onLongPress: () => _toggleFavorite(files[i].id),
             ),
             if (i < files.length - 1)
               Divider(
