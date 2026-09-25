@@ -16,7 +16,10 @@ enum SortMode { recent, name, size }
 /// shows only folders. Tapping a folder narrows the file list to that
 /// folder; long-pressing a file toggles its favorite state.
 class FileBrowserScreen extends StatefulWidget {
-  const FileBrowserScreen({super.key});
+  /// Optional category pre-filter, e.g. when Home taps the Documents tile.
+  final String? initialCategory;
+
+  const FileBrowserScreen({super.key, this.initialCategory});
 
   @override
   State<FileBrowserScreen> createState() => _FileBrowserScreenState();
@@ -34,6 +37,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   /// Folders created during this session. Persistence is a Week 3 task.
   final List<FolderItem> _customFolders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _categoryFilter = widget.initialCategory;
+  }
 
   List<FolderItem> get _allFolders => [...sampleFolders, ..._customFolders];
 
@@ -601,7 +610,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           child: _bottomBarButton(
             icon: Icons.home_outlined,
             label: 'Home',
-            onTap: () {},
+            onTap: () => Navigator.of(context).maybePop(),
             theme: theme,
           ),
         ),
