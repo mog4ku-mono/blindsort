@@ -12,10 +12,9 @@ import '../widgets/folder_list_item.dart';
 /// Sort options offered by the "Sorted by ..." dropdown.
 enum SortMode { recent, name, size }
 
-/// File Browser. Category tiles filter the file list by broad type, the
-/// Files & Folders header lets the user switch sort order, and the bottom
-/// bar carries Home and Filter & Sort. Tapping a row will route to File
-/// Details once that screen lands.
+/// File Browser. Categories tab shows tiles, folders, and files; Folders tab
+/// shows only the folder list. Category tiles filter the file list by broad
+/// type. Voice Search and Filter & Sort live in the app bar and bottom bar.
 class FileBrowserScreen extends StatefulWidget {
   const FileBrowserScreen({super.key});
 
@@ -25,8 +24,17 @@ class FileBrowserScreen extends StatefulWidget {
 
 class _FileBrowserScreenState extends State<FileBrowserScreen> {
   int _tabIndex = 0; // 0 = Categories, 1 = Folders
-  String? _categoryFilter; // null = all types
+  String? _categoryFilter;
   SortMode _sort = SortMode.recent;
+  bool _entered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _entered = true);
+    });
+  }
 
   List get _visibleFiles {
     final list = sampleFiles
@@ -59,10 +67,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
   }
 
+  int _countFor(String category) =>
+      sampleFiles.where((f) => kFileTypeCategory[f.type] == category).length;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         titleSpacing: 0,
         centerTitle: true,
@@ -90,35 +102,100 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const Divider(height: 1),
-          _breadcrumb(theme),
-          const Divider(height: 1, thickness: 1),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                _tabs(theme),
-                const SizedBox(height: AppSpacing.md),
-                if (_tabIndex == 0) _categoryRow(),
-                if (_tabIndex == 0) const SizedBox(height: AppSpacing.md),
-                if (_categoryFilter != null) _activeFilterChip(theme),
-                if (_categoryFilter != null)
-                  const SizedBox(height: AppSpacing.sm),
-                _filesAndFoldersHeader(theme),
-                const SizedBox(height: AppSpacing.sm),
-                if (_tabIndex == 0) _folderGroup(theme),
-                if (_tabIndex == 0) const SizedBox(height: AppSpacing.sm),
-                _fileGroup(theme),
-              ],
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.secondaryContainer.withValues(alpha: 0.20),
+              theme.colorScheme.surface,
+            ],
+            stops: const [0.0, 0.25],
           ),
-        ],
+        ),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+          opacity: _entered ? 1.0 : 0.0,
+          child: Column(
+            children: [
+              const Divider(height: 1),
+              _breadcrumb(theme),
+              const Divider(height: 1, thickness: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  0,
+                ),
+                child: _tabs(theme),
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  ),
+                  child: _tabBody(theme),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       bottomNavigationBar: _bottomBar(theme),
     );
   }
+
+  Widget _tabBody(ThemeData theme) {
+    if (_tabIndex == 1) {
+      return ListView(
+        key: const ValueKey('folders'),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          _sectionLabel(theme, 'Folders'),
+          const SizedBox(height: AppSpacing.sm),
+          _folderGroup(theme),
+        ],
+      );
+    }
+
+    return ListView(
+      key: const ValueKey('categories'),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        _categoryRow(),
+        const SizedBox(height: AppSpacing.md),
+        if (_categoryFilter != null) ...[
+          _activeFilterChip(theme),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        _filesAndFoldersHeader(theme),
+        const SizedBox(height: AppSpacing.sm),
+        _folderGroup(theme),
+        const SizedBox(height: AppSpacing.sm),
+        _fileGroup(theme),
+      ],
+    );
+  }
+
+  Widget _sectionLabel(ThemeData theme, String text) => Text(
+    text,
+    style: theme.textTheme.headlineSmall?.copyWith(
+      color: theme.colorScheme.secondary,
+    ),
+  );
 
   Widget _breadcrumb(ThemeData theme) => Padding(
     padding: const EdgeInsets.symmetric(
@@ -171,22 +248,29 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   Widget _tabButton(String label, int index, ThemeData theme) {
     final active = _tabIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _tabIndex = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: active ? theme.colorScheme.secondary : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: active
-                ? theme.colorScheme.onSecondary
-                : theme.colorScheme.onSurfaceVariant,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: GestureDetector(
+        onTap: () => setState(() => _tabIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: active ? theme.colorScheme.secondary : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: active
+                  ? theme.colorScheme.onSecondary
+                  : theme.colorScheme.onSurfaceVariant,
+              fontWeight: active ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ),
       ),
@@ -207,14 +291,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           foregroundColor: _categoryFilter == 'Documents'
               ? Colors.white
               : kDocumentsColors.foreground,
-          itemCount: sampleFiles
-              .where((f) => kFileTypeCategory[f.type] == 'Documents')
-              .length,
-          onTap: () => setState(
-            () => _categoryFilter = _categoryFilter == 'Documents'
-                ? null
-                : 'Documents',
-          ),
+          itemCount: _countFor('Documents'),
+          onTap: () => _toggleFilter('Documents'),
         ),
         CategoryNavigationItem(
           categoryName: 'Images',
@@ -225,13 +303,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           foregroundColor: _categoryFilter == 'Images'
               ? Colors.white
               : kImagesColors.foreground,
-          itemCount: sampleFiles
-              .where((f) => kFileTypeCategory[f.type] == 'Images')
-              .length,
-          onTap: () => setState(
-            () =>
-                _categoryFilter = _categoryFilter == 'Images' ? null : 'Images',
-          ),
+          itemCount: _countFor('Images'),
+          onTap: () => _toggleFilter('Images'),
         ),
         CategoryNavigationItem(
           categoryName: 'Videos',
@@ -242,13 +315,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           foregroundColor: _categoryFilter == 'Videos'
               ? Colors.white
               : kVideosColors.foreground,
-          itemCount: sampleFiles
-              .where((f) => kFileTypeCategory[f.type] == 'Videos')
-              .length,
-          onTap: () => setState(
-            () =>
-                _categoryFilter = _categoryFilter == 'Videos' ? null : 'Videos',
-          ),
+          itemCount: _countFor('Videos'),
+          onTap: () => _toggleFilter('Videos'),
         ),
         CategoryNavigationItem(
           categoryName: 'Audio',
@@ -259,21 +327,82 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           foregroundColor: _categoryFilter == 'Audio'
               ? Colors.white
               : kAudioColors.foreground,
-          itemCount: sampleFiles
-              .where((f) => kFileTypeCategory[f.type] == 'Audio')
-              .length,
-          onTap: () => setState(
-            () => _categoryFilter = _categoryFilter == 'Audio' ? null : 'Audio',
-          ),
+          itemCount: _countFor('Audio'),
+          onTap: () => _toggleFilter('Audio'),
         ),
         CategoryNavigationItem(
           categoryName: 'More',
           icon: Icons.more_horiz,
           tintColor: theme.colorScheme.surfaceContainerHighest,
           foregroundColor: theme.colorScheme.onSurfaceVariant,
-          onTap: () {},
+          onTap: () => _showMoreCategories(theme),
         ),
       ],
+    );
+  }
+
+  void _toggleFilter(String category) {
+    setState(() {
+      _categoryFilter = _categoryFilter == category ? null : category;
+    });
+  }
+
+  void _showMoreCategories(ThemeData theme) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('All categories', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _moreChip(theme, 'Apps', Icons.android_outlined),
+                _moreChip(theme, 'Archives', Icons.folder_zip_outlined),
+                _moreChip(theme, 'Downloads', Icons.download_outlined),
+                _moreChip(theme, 'Favorites', Icons.star_border),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _moreChip(ThemeData theme, String label, IconData icon) {
+    final selected = _categoryFilter == label;
+    return ActionChip(
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: selected
+            ? theme.colorScheme.onSecondary
+            : theme.colorScheme.secondary,
+      ),
+      label: Text(label),
+      backgroundColor: selected
+          ? theme.colorScheme.secondary
+          : theme.colorScheme.surface,
+      labelStyle: TextStyle(
+        color: selected
+            ? theme.colorScheme.onSecondary
+            : theme.colorScheme.onSurface,
+      ),
+      onPressed: () {
+        Navigator.pop(context);
+        setState(() => _categoryFilter = selected ? null : label);
+      },
     );
   }
 
@@ -318,8 +447,15 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     decoration: BoxDecoration(
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: theme.colorScheme.outlineVariant),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
     ),
+    clipBehavior: Clip.antiAlias,
     child: Column(
       children: [
         for (var i = 0; i < sampleFolders.length; i++) ...[
@@ -352,24 +488,28 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Column(
-          children: [
-            for (var i = 0; i < files.length; i++) ...[
-              FileListItem(file: files[i], onTap: () {}),
-              if (i < files.length - 1)
-                Divider(
-                  height: 1,
-                  indent: AppSpacing.md,
-                  endIndent: AppSpacing.md,
-                  color: theme.colorScheme.outlineVariant,
-                ),
-            ],
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < files.length; i++) ...[
+            FileListItem(file: files[i], onTap: () {}),
+            if (i < files.length - 1)
+              Divider(
+                height: 1,
+                indent: AppSpacing.md,
+                endIndent: AppSpacing.md,
+                color: theme.colorScheme.outlineVariant,
+              ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -397,12 +537,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           child: _bottomBarButton(
             icon: Icons.grid_view,
             label: 'Filter & Sort',
-            onTap: () {
-              showModalBottomSheet<void>(
-                context: context,
-                builder: (_) => _filterSortSheet(theme),
-              );
-            },
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              showDragHandle: true,
+              builder: (_) => _filterSortSheet(theme),
+            ),
             theme: theme,
             iconAfterLabel: true,
           ),
