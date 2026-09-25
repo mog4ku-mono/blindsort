@@ -12,6 +12,7 @@ import '../widgets/section_card.dart';
 import '../widgets/voice_search_overlay.dart';
 import 'file_browser_screen.dart';
 import 'file_details_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,6 +61,15 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => FileDetailsScreen(file: file)),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
     ).then((_) {
       if (mounted) setState(() {});
     });
@@ -120,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icons.settings,
                     color: theme.colorScheme.secondary,
                   ),
-                  onPressed: () {},
+                  onPressed: _openSettings,
                   tooltip: 'Settings',
                 ),
               ),
