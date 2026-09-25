@@ -7,13 +7,20 @@ import '../theme.dart';
 /// differently from a category tile.
 class FolderListItem extends StatelessWidget {
   final FolderItem folder;
+  final int? itemCount;
   final VoidCallback onTap;
 
-  const FolderListItem({super.key, required this.folder, required this.onTap});
+  const FolderListItem({
+    super.key,
+    required this.folder,
+    required this.onTap,
+    this.itemCount,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final count = itemCount ?? folder.itemCount;
     final days = DateTime.now().difference(folder.modifiedAt).inDays;
     final rel = days <= 0
         ? 'Today'
@@ -23,7 +30,7 @@ class FolderListItem extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: '${folder.name}, folder, ${folder.itemCount} items, $rel',
+      label: '${folder.name}, folder, $count items, $rel',
       child: InkWell(
         onTap: onTap,
         child: ListTile(
@@ -39,7 +46,7 @@ class FolderListItem extends StatelessWidget {
           ),
           title: Text(folder.name, style: theme.textTheme.bodyMedium),
           subtitle: Text(
-            'Folder · ${folder.itemCount} items · $rel',
+            'Folder · $count items · $rel',
             style: theme.textTheme.labelSmall,
           ),
           trailing: const Icon(Icons.chevron_right),
