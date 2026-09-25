@@ -9,12 +9,11 @@ import '../widgets/category_navigation_item.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/folder_list_item.dart';
 
-/// Sort options offered by the "Sorted by ..." dropdown.
 enum SortMode { recent, name, size }
 
 /// File Browser. Categories tab shows tiles, folders, and files; Folders tab
-/// shows only the folder list. Category tiles filter the file list by broad
-/// type. Voice Search and Filter & Sort live in the app bar and bottom bar.
+/// shows only folders. Category tiles filter the file list; tapping a folder
+/// narrows to that folder's files.
 class FileBrowserScreen extends StatefulWidget {
   const FileBrowserScreen({super.key});
 
@@ -23,27 +22,28 @@ class FileBrowserScreen extends StatefulWidget {
 }
 
 class _FileBrowserScreenState extends State<FileBrowserScreen> {
-  int _tabIndex = 0; // 0 = Categories, 1 = Folders
+  int _tabIndex = 0;
   String? _categoryFilter;
+  String? _folderFilter;
+  String? _selectedFileId;
   SortMode _sort = SortMode.recent;
-  bool _entered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _entered = true);
-    });
-  }
 
   List get _visibleFiles {
-    final list = sampleFiles
-        .where(
-          (f) =>
-              _categoryFilter == null ||
-              kFileTypeCategory[f.type] == _categoryFilter,
-        )
-        .toList();
+    var list = sampleFiles;
+
+    if (_categoryFilter == 'Favorites') {
+      list = list.where((f) => f.isFavorite).toList();
+    } else if (_categoryFilter == 'Downloads') {
+      list = list.where((f) => f.location.contains('Download')).toList();
+    } else if (_categoryFilter != null) {
+      list = list
+          .where((f) => kFileTypeCategory[f.type] == _categoryFilter)
+          .toList();
+    }
+
+    if (_folderFilter != null) {
+      list = list.where((f) => f.location.contains(_folderFilter!)).toList();
+    }
 
     switch (_sort) {
       case SortMode.recent:
@@ -70,11 +70,17 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   int _countFor(String category) =>
       sampleFiles.where((f) => kFileTypeCategory[f.type] == category).length;
 
+  String get _breadcrumbText {
+    if (_folderFilter != null) {
+      return 'Internal Storage  ›  Documents  ›  $_folderFilter';
+    }
+    return 'Internal Storage  ›  Documents';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      extendBodyBehindAppBar: false,
       appBar: AppBar(
         titleSpacing: 0,
         centerTitle: true,
@@ -108,50 +114,45 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              theme.colorScheme.secondaryContainer.withValues(alpha: 0.20),
+              theme.colorScheme.secondaryContainer.withValues(alpha: 0.22),
               theme.colorScheme.surface,
             ],
-            stops: const [0.0, 0.25],
+            stops: const [0.0, 0.3],
           ),
         ),
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOut,
-          opacity: _entered ? 1.0 : 0.0,
-          child: Column(
-            children: [
-              const Divider(height: 1),
-              _breadcrumb(theme),
-              const Divider(height: 1, thickness: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  0,
-                ),
-                child: _tabs(theme),
+        child: Column(
+          children: [
+            const Divider(height: 1),
+            _breadcrumb(theme),
+            const Divider(height: 1, thickness: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                0,
               ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.04),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    ),
+              child: _tabs(theme),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 360),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.06),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
                   ),
-                  child: _tabBody(theme),
                 ),
+                child: _tabBody(theme),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _bottomBar(theme),
@@ -177,14 +178,16 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       children: [
         _categoryRow(),
         const SizedBox(height: AppSpacing.md),
-        if (_categoryFilter != null) ...[
-          _activeFilterChip(theme),
+        if (_categoryFilter != null || _folderFilter != null) ...[
+          _activeFiltersRow(theme),
           const SizedBox(height: AppSpacing.sm),
         ],
         _filesAndFoldersHeader(theme),
         const SizedBox(height: AppSpacing.sm),
-        _folderGroup(theme),
-        const SizedBox(height: AppSpacing.sm),
+        if (_folderFilter == null) ...[
+          _folderGroup(theme),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         _fileGroup(theme),
       ],
     );
@@ -220,11 +223,13 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               color: theme.colorScheme.onSurface,
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Internal Storage  ›  Documents',
-              style: theme.textTheme.bodyMedium,
+            Expanded(
+              child: Text(
+                _breadcrumbText,
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const Spacer(),
             const Icon(Icons.chevron_right),
           ],
         ),
@@ -255,22 +260,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       child: GestureDetector(
         onTap: () => setState(() => _tabIndex = index),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOutCubic,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
             color: active ? theme.colorScheme.secondary : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 280),
+            style: theme.textTheme.bodyMedium!.copyWith(
               color: active
                   ? theme.colorScheme.onSecondary
                   : theme.colorScheme.onSurfaceVariant,
               fontWeight: active ? FontWeight.bold : FontWeight.normal,
             ),
+            child: Text(label, textAlign: TextAlign.center),
           ),
         ),
       ),
@@ -282,54 +287,20 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        CategoryNavigationItem(
-          categoryName: 'Documents',
-          icon: Icons.description_outlined,
-          tintColor: _categoryFilter == 'Documents'
-              ? kDocumentsColors.foreground
-              : kDocumentsColors.tint,
-          foregroundColor: _categoryFilter == 'Documents'
-              ? Colors.white
-              : kDocumentsColors.foreground,
-          itemCount: _countFor('Documents'),
-          onTap: () => _toggleFilter('Documents'),
+        _categoryTile(
+          'Documents',
+          Icons.description_outlined,
+          kDocumentsColors,
+          theme,
         ),
-        CategoryNavigationItem(
-          categoryName: 'Images',
-          icon: Icons.image_outlined,
-          tintColor: _categoryFilter == 'Images'
-              ? kImagesColors.foreground
-              : kImagesColors.tint,
-          foregroundColor: _categoryFilter == 'Images'
-              ? Colors.white
-              : kImagesColors.foreground,
-          itemCount: _countFor('Images'),
-          onTap: () => _toggleFilter('Images'),
+        _categoryTile('Images', Icons.image_outlined, kImagesColors, theme),
+        _categoryTile(
+          'Videos',
+          Icons.video_library_outlined,
+          kVideosColors,
+          theme,
         ),
-        CategoryNavigationItem(
-          categoryName: 'Videos',
-          icon: Icons.video_library_outlined,
-          tintColor: _categoryFilter == 'Videos'
-              ? kVideosColors.foreground
-              : kVideosColors.tint,
-          foregroundColor: _categoryFilter == 'Videos'
-              ? Colors.white
-              : kVideosColors.foreground,
-          itemCount: _countFor('Videos'),
-          onTap: () => _toggleFilter('Videos'),
-        ),
-        CategoryNavigationItem(
-          categoryName: 'Audio',
-          icon: Icons.music_note_outlined,
-          tintColor: _categoryFilter == 'Audio'
-              ? kAudioColors.foreground
-              : kAudioColors.tint,
-          foregroundColor: _categoryFilter == 'Audio'
-              ? Colors.white
-              : kAudioColors.foreground,
-          itemCount: _countFor('Audio'),
-          onTap: () => _toggleFilter('Audio'),
-        ),
+        _categoryTile('Audio', Icons.music_note_outlined, kAudioColors, theme),
         CategoryNavigationItem(
           categoryName: 'More',
           icon: Icons.more_horiz,
@@ -338,6 +309,23 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           onTap: () => _showMoreCategories(theme),
         ),
       ],
+    );
+  }
+
+  Widget _categoryTile(
+    String label,
+    IconData icon,
+    CategoryColorPair colors,
+    ThemeData theme,
+  ) {
+    final selected = _categoryFilter == label;
+    return CategoryNavigationItem(
+      categoryName: label,
+      icon: icon,
+      tintColor: selected ? colors.foreground : colors.tint,
+      foregroundColor: selected ? Colors.white : colors.foreground,
+      itemCount: _countFor(label),
+      onTap: () => _toggleFilter(label),
     );
   }
 
@@ -368,10 +356,10 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
+                _moreChip(theme, 'Favorites', Icons.star_border),
                 _moreChip(theme, 'Apps', Icons.android_outlined),
                 _moreChip(theme, 'Archives', Icons.folder_zip_outlined),
                 _moreChip(theme, 'Downloads', Icons.download_outlined),
-                _moreChip(theme, 'Favorites', Icons.star_border),
               ],
             ),
           ],
@@ -406,20 +394,29 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     );
   }
 
-  Widget _activeFilterChip(ThemeData theme) => Row(
+  Widget _activeFiltersRow(ThemeData theme) => Wrap(
+    spacing: AppSpacing.sm,
+    runSpacing: AppSpacing.xs,
     children: [
-      Chip(
-        label: Text('Showing: $_categoryFilter'),
-        onDeleted: () => setState(() => _categoryFilter = null),
-        deleteIcon: const Icon(Icons.close, size: 16),
-      ),
+      if (_categoryFilter != null)
+        Chip(
+          label: Text('Showing: $_categoryFilter'),
+          onDeleted: () => setState(() => _categoryFilter = null),
+          deleteIcon: const Icon(Icons.close, size: 16),
+        ),
+      if (_folderFilter != null)
+        Chip(
+          label: Text('Folder: $_folderFilter'),
+          onDeleted: () => setState(() => _folderFilter = null),
+          deleteIcon: const Icon(Icons.close, size: 16),
+        ),
     ],
   );
 
   Widget _filesAndFoldersHeader(ThemeData theme) => Row(
     children: [
       Text(
-        'Files & Folders',
+        _folderFilter == null ? 'Files & Folders' : 'Files',
         style: theme.textTheme.headlineSmall?.copyWith(
           color: theme.colorScheme.secondary,
         ),
@@ -447,10 +444,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     decoration: BoxDecoration(
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: theme.colorScheme.outlineVariant),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 6,
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 8,
           offset: const Offset(0, 2),
         ),
       ],
@@ -459,7 +457,13 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     child: Column(
       children: [
         for (var i = 0; i < sampleFolders.length; i++) ...[
-          FolderListItem(folder: sampleFolders[i], onTap: () {}),
+          FolderListItem(
+            folder: sampleFolders[i],
+            onTap: () => setState(() {
+              final name = sampleFolders[i].name;
+              _folderFilter = _folderFilter == name ? null : name;
+            }),
+          ),
           if (i < sampleFolders.length - 1)
             Divider(
               height: 1,
@@ -488,10 +492,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -500,7 +505,15 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       child: Column(
         children: [
           for (var i = 0; i < files.length; i++) ...[
-            FileListItem(file: files[i], onTap: () {}),
+            FileListItem(
+              file: files[i],
+              isSelected: _selectedFileId == files[i].id,
+              onTap: () => setState(() {
+                _selectedFileId = _selectedFileId == files[i].id
+                    ? null
+                    : files[i].id;
+              }),
+            ),
             if (i < files.length - 1)
               Divider(
                 height: 1,
@@ -601,8 +614,23 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text('Filter', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            _filterChip(theme, 'Favorites', Icons.star_border),
+            _filterChip(theme, 'Documents', Icons.description_outlined),
+            _filterChip(theme, 'Images', Icons.image_outlined),
+            _filterChip(theme, 'Videos', Icons.video_library_outlined),
+            _filterChip(theme, 'Audio', Icons.music_note_outlined),
+            _filterChip(theme, 'Downloads', Icons.download_outlined),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
         Text('Sort by', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.xs),
         RadioGroup<SortMode>(
           groupValue: _sort,
           onChanged: (v) {
@@ -615,11 +643,41 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final mode in SortMode.values)
-                RadioListTile<SortMode>(title: Text(mode.name), value: mode),
+                RadioListTile<SortMode>(
+                  title: Text(mode.name),
+                  value: mode,
+                  dense: true,
+                ),
             ],
           ),
         ),
       ],
     ),
   );
+
+  Widget _filterChip(ThemeData theme, String label, IconData icon) {
+    final selected = _categoryFilter == label;
+    return FilterChip(
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: selected
+            ? theme.colorScheme.onSecondary
+            : theme.colorScheme.secondary,
+      ),
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) {
+        Navigator.pop(context);
+        setState(() => _categoryFilter = selected ? null : label);
+      },
+      selectedColor: theme.colorScheme.secondary,
+      checkmarkColor: theme.colorScheme.onSecondary,
+      labelStyle: TextStyle(
+        color: selected
+            ? theme.colorScheme.onSecondary
+            : theme.colorScheme.onSurface,
+      ),
+    );
+  }
 }
