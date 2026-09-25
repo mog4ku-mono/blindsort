@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
 
-/// A category tile on Home and the File Browser. Outlined so the icon and
-/// label carry the meaning, not the fill colour. The item count is optional.
+/// A category tile on Home and the File Browser. Takes an explicit tint and
+/// foreground so each tile can carry its own colour: Documents blue, Images
+/// green, Videos purple, Audio orange.
 class CategoryNavigationItem extends StatelessWidget {
   final String categoryName;
   final IconData icon;
+  final Color tintColor;
+  final Color foregroundColor;
   final int? itemCount;
   final VoidCallback onTap;
 
@@ -14,6 +17,8 @@ class CategoryNavigationItem extends StatelessWidget {
     super.key,
     required this.categoryName,
     required this.icon,
+    required this.tintColor,
+    required this.foregroundColor,
     required this.onTap,
     this.itemCount,
   });
@@ -31,7 +36,7 @@ class CategoryNavigationItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
+            horizontal: AppSpacing.xs,
             vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
@@ -47,10 +52,10 @@ class CategoryNavigationItem extends StatelessWidget {
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.secondaryContainer,
+                  color: tintColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: theme.colorScheme.secondary, size: 22),
+                child: Icon(icon, color: foregroundColor, size: 22),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
