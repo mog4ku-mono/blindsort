@@ -125,4 +125,6 @@ visitor reads; that file is the record the badge is graded from.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Change it if you want different terms.
+All Rights Reserved. See [LICENSE](LICENSE). This repository is publicly
+visible for coursework review only and does not grant any license to use,
+copy, or redistribute.
