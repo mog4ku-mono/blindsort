@@ -17,5 +17,22 @@ const Map<String, Color> kFileTypeColors = {
   'MP3': Color(0xFFC2185B),
 };
 
+/// Groups a file type under a broad category so the category tiles on Home
+/// and File Browser can filter the file list without a hardcoded switch in
+/// each screen.
+const Map<String, String> kFileTypeCategory = {
+  'PDF': 'Documents',
+  'DOC': 'Documents',
+  'DOCX': 'Documents',
+  'PPT': 'Documents',
+  'PPTX': 'Documents',
+  'PNG': 'Images',
+  'JPG': 'Images',
+  'JPEG': 'Images',
+  'MKV': 'Videos',
+  'MP4': 'Videos',
+  'MP3': 'Audio',
+};
+
 /// Fallback when the extension is not in the map.
 const Color kDefaultTypeColor = Color(0xFF546E7A);
