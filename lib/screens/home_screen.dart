@@ -13,6 +13,7 @@ import '../widgets/voice_search_overlay.dart';
 import 'file_browser_screen.dart';
 import 'file_details_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -88,13 +89,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      drawer: AppDrawer(
+        onOpenBrowser: () => _openBrowser(),
+        onOpenSettings: _openSettings,
+        onClose: () => Navigator.pop(context),
+      ),
       appBar: AppBar(
         titleSpacing: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {},
-          tooltip: 'Menu',
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            tooltip: 'Menu',
+          ),
         ),
         title: Column(
           mainAxisSize: MainAxisSize.min,

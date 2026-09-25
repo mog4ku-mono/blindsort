@@ -56,6 +56,12 @@ class AppState {
     }
   }
 
+  static void restoreFile(String fileId) {
+    deletedFileIds.remove(fileId);
+  }
+
+  static List<String> get deletedIdsList => deletedFileIds.toList();
+
   static bool isFolderDeleted(String name) => deletedFolderNames.contains(name);
 
   static void addFolder(String name) {
