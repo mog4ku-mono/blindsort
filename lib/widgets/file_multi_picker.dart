@@ -5,7 +5,6 @@ import '../constants/file_type_colors.dart';
 import '../data/sample_files.dart';
 import '../state/app_state.dart';
 
-/// Opens a multi-select picker for adding or removing files from a folder.
 Future<void> showFileMultiPicker(
   BuildContext context,
   String folderName, {
@@ -32,11 +31,15 @@ class _FileMultiPicker extends StatefulWidget {
 
 class _FileMultiPickerState extends State<_FileMultiPicker> {
   late final Set<String> _selected;
+  late final List _candidates;
 
   @override
   void initState() {
     super.initState();
-    _selected = {...(AppState.folderContents[widget.folderName] ?? {})};
+    _selected = {
+      ...(AppState.folderContents[widget.folderName] ?? const <String>{}),
+    };
+    _candidates = sampleFiles.where((f) => !AppState.isDeleted(f.id)).toList();
   }
 
   @override
@@ -71,9 +74,9 @@ class _FileMultiPickerState extends State<_FileMultiPicker> {
           const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: ListView.builder(
-              itemCount: sampleFiles.length,
+              itemCount: _candidates.length,
               itemBuilder: (_, i) {
-                final file = sampleFiles[i];
+                final file = _candidates[i];
                 final selected = _selected.contains(file.id);
                 final color = kFileTypeColors[file.type] ?? kDefaultTypeColor;
                 return InkWell(
