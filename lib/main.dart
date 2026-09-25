@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
 import 'theme.dart';
+import 'screens/file_browser_screen.dart';
 
 void main() {
   runApp(
@@ -23,7 +24,7 @@ class BlindSortApp extends StatelessWidget {
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
       theme: appTheme,
-      home: const HomeScreen(),
+      home: const FileBrowserScreen(),
     );
   }
 }
