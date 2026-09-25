@@ -1,10 +1,6 @@
 # BlindSort
 
-BlindSort is an accessibility-first file manager for blind and low-vision
-Android users. It speaks file names, types, and metadata so a user can find
-what they need without reading a screen, and it organises files through
-screen-reader-friendly navigation, virtual categories, and voice-assisted
-search.
+*An accessibility-first Android file manager that helps blind and visually impaired users locate, understand, and organize downloaded files through screen-reader-friendly navigation, file insights, virtual categorization, and voice-assisted search.*
 
 > Week 2 status: the four approved screens are built and reachable. File
 > Browser, File Details, Settings, and the App Drawer are working. Voice
@@ -12,8 +8,11 @@ search.
 > still in progress.
 
 **Live demo:** https://mog4ku-mono.github.io/blindsort/
+
 **Demo video:** not yet available
+
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
+
 **Author:** [mog4ku-mono](https://github.com/mog4ku-mono)
 
 This repository lives in the author's own GitHub account and is public on
