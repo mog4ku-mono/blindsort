@@ -510,7 +510,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => ValueListenableBuilder<ThemeMode>(
         valueListenable: AppState.themeMode,
-        builder: (context, _, __) => StatefulBuilder(
+        builder: (context, _, _) => StatefulBuilder(
           builder: (context, setSheetState) {
             final currentTheme = Theme.of(context);
             final children = childrenBuilder(() => setSheetState(() {}));
