@@ -24,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _entered = false;
+  String? _selectedFileId;
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openDetails(FileItem file) {
+    setState(() => _selectedFileId = file.id);
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => FileDetailsScreen(file: file)),
@@ -219,6 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
           FileListItem(
             file: _recent[i],
             isFavorite: AppState.isFavorite(_recent[i].id),
+            isSelected: _selectedFileId == _recent[i].id,
             onTap: () => _openDetails(_recent[i]),
             onLongPress: () => showFileActions(
               context,
@@ -256,6 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 FileListItem(
                   file: _favorites[i],
                   isFavorite: true,
+                  isSelected: _selectedFileId == _favorites[i].id,
                   onTap: () => _openDetails(_favorites[i]),
                   onLongPress: () => showFileActions(
                     context,
@@ -283,39 +287,46 @@ class _HomeScreenState extends State<HomeScreen> {
       child: const Text('More categories →'),
     ),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        CategoryNavigationItem(
-          categoryName: 'Documents',
-          icon: Icons.description_outlined,
-          tintColor: kDocumentsColors.tint,
-          foregroundColor: kDocumentsColors.foreground,
-          itemCount: _countFor('Documents'),
-          onTap: () => _openBrowser(category: 'Documents'),
+        Expanded(
+          child: CategoryNavigationItem(
+            categoryName: 'Documents',
+            icon: Icons.description_outlined,
+            tintColor: kDocumentsColors.tint,
+            foregroundColor: kDocumentsColors.foreground,
+            itemCount: _countFor('Documents'),
+            onTap: () => _openBrowser(category: 'Documents'),
+          ),
         ),
-        CategoryNavigationItem(
-          categoryName: 'Images',
-          icon: Icons.image_outlined,
-          tintColor: kImagesColors.tint,
-          foregroundColor: kImagesColors.foreground,
-          itemCount: _countFor('Images'),
-          onTap: () => _openBrowser(category: 'Images'),
+        Expanded(
+          child: CategoryNavigationItem(
+            categoryName: 'Images',
+            icon: Icons.image_outlined,
+            tintColor: kImagesColors.tint,
+            foregroundColor: kImagesColors.foreground,
+            itemCount: _countFor('Images'),
+            onTap: () => _openBrowser(category: 'Images'),
+          ),
         ),
-        CategoryNavigationItem(
-          categoryName: 'Videos',
-          icon: Icons.video_library_outlined,
-          tintColor: kVideosColors.tint,
-          foregroundColor: kVideosColors.foreground,
-          itemCount: _countFor('Videos'),
-          onTap: () => _openBrowser(category: 'Videos'),
+        Expanded(
+          child: CategoryNavigationItem(
+            categoryName: 'Videos',
+            icon: Icons.video_library_outlined,
+            tintColor: kVideosColors.tint,
+            foregroundColor: kVideosColors.foreground,
+            itemCount: _countFor('Videos'),
+            onTap: () => _openBrowser(category: 'Videos'),
+          ),
         ),
-        CategoryNavigationItem(
-          categoryName: 'Audio',
-          icon: Icons.music_note_outlined,
-          tintColor: kAudioColors.tint,
-          foregroundColor: kAudioColors.foreground,
-          itemCount: _countFor('Audio'),
-          onTap: () => _openBrowser(category: 'Audio'),
+        Expanded(
+          child: CategoryNavigationItem(
+            categoryName: 'Audio',
+            icon: Icons.music_note_outlined,
+            tintColor: kAudioColors.tint,
+            foregroundColor: kAudioColors.foreground,
+            itemCount: _countFor('Audio'),
+            onTap: () => _openBrowser(category: 'Audio'),
+          ),
         ),
       ],
     ),

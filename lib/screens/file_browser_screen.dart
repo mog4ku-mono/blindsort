@@ -30,6 +30,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   int _tabIndex = 0;
   String? _categoryFilter;
   String? _folderFilter;
+  String? _selectedFileId;
   SortMode _sort = SortMode.recent;
 
   @override
@@ -228,6 +229,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   }
 
   void _openDetails(FileItem file) {
+    setState(() => _selectedFileId = file.id);
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => FileDetailsScreen(file: file)),
@@ -473,28 +475,47 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   Widget _categoryRow() {
     final theme = Theme.of(context);
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _categoryTile(
-          'Documents',
-          Icons.description_outlined,
-          kDocumentsColors,
-          theme,
+        Expanded(
+          child: _categoryTile(
+            'Documents',
+            Icons.description_outlined,
+            kDocumentsColors,
+            theme,
+          ),
         ),
-        _categoryTile('Images', Icons.image_outlined, kImagesColors, theme),
-        _categoryTile(
-          'Videos',
-          Icons.video_library_outlined,
-          kVideosColors,
-          theme,
+        Expanded(
+          child: _categoryTile(
+            'Images',
+            Icons.image_outlined,
+            kImagesColors,
+            theme,
+          ),
         ),
-        _categoryTile('Audio', Icons.music_note_outlined, kAudioColors, theme),
-        CategoryNavigationItem(
-          categoryName: 'More',
-          icon: Icons.more_horiz,
-          tintColor: theme.colorScheme.surfaceContainerHighest,
-          foregroundColor: theme.colorScheme.onSurfaceVariant,
-          onTap: () => _showMoreCategories(theme),
+        Expanded(
+          child: _categoryTile(
+            'Videos',
+            Icons.video_library_outlined,
+            kVideosColors,
+            theme,
+          ),
+        ),
+        Expanded(
+          child: _categoryTile(
+            'Audio',
+            Icons.music_note_outlined,
+            kAudioColors,
+            theme,
+          ),
+        ),
+        Expanded(
+          child: CategoryNavigationItem(
+            categoryName: 'More',
+            icon: Icons.more_horiz,
+            tintColor: theme.colorScheme.surfaceContainerHighest,
+            foregroundColor: theme.colorScheme.onSurfaceVariant,
+            onTap: () => _showMoreCategories(theme),
+          ),
         ),
       ],
     );
@@ -667,6 +688,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             FileListItem(
               file: files[i],
               isFavorite: AppState.isFavorite(files[i].id),
+              isSelected: _selectedFileId == files[i].id,
               onTap: () => _openDetails(files[i]),
               onLongPress: () => showFileActions(
                 context,

@@ -613,51 +613,57 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
         Row(
           children: [
             Expanded(
-              flex: 4,
               child: FilledButton.icon(
                 onPressed: _onOpen,
                 style: FilledButton.styleFrom(
                   backgroundColor: theme.colorScheme.secondary,
                   foregroundColor: theme.colorScheme.onSecondary,
                   minimumSize: const Size.fromHeight(48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                icon: const Icon(Icons.visibility_outlined, size: 20),
-                label: const Text('Open'),
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('Open', style: TextStyle(fontSize: 13)),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              flex: 3,
               child: OutlinedButton.icon(
                 onPressed: _onShare,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                icon: const Icon(Icons.share_outlined, size: 20),
-                label: const Text('Share'),
+                icon: const Icon(Icons.share_outlined, size: 18),
+                label: const Text('Share', style: TextStyle(fontSize: 13)),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              flex: 3,
               child: FilledButton.icon(
                 onPressed: _onLocate,
                 style: FilledButton.styleFrom(
                   backgroundColor: theme.colorScheme.secondary,
                   foregroundColor: theme.colorScheme.onSecondary,
                   minimumSize: const Size.fromHeight(48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                icon: const Icon(Icons.folder_outlined, size: 20),
-                label: const Text('Locate'),
+                icon: const Icon(Icons.folder_outlined, size: 18),
+                label: const Text('Locate', style: TextStyle(fontSize: 13)),
               ),
             ),
           ],
