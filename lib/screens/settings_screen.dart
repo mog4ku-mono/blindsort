@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../constants/app_spacing.dart';
 import '../state/app_state.dart';
 
-/// Settings. Six groups of toggles with Save and Revert at the bottom when
-/// there are pending changes. Dark mode applies immediately so the user sees
-/// the effect; other toggles commit together on Save.
+/// Settings. Six tappable cards on the main page. Tapping a card opens a
+/// sheet with that section's controls, laid out inline: label on the left,
+/// switch or dropdown on the right, teal highlight when on.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -19,8 +19,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool? _pVoiceInput;
   bool? _pReadAloud;
   bool? _pAudioFeedback;
+  String? _pSpeechRate;
+  String? _pTextSize;
+  bool? _pHighContrast;
   bool? _pHaptic;
   bool? _pHapticActions;
+  String? _pVibration;
   bool? _pAutoBackup;
   String? _pLanguage;
 
@@ -31,15 +35,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool get _voiceInput => _pVoiceInput ?? AppState.voiceInput;
   bool get _readAloud => _pReadAloud ?? AppState.readAloud;
   bool get _audioFeedback => _pAudioFeedback ?? AppState.audioFeedback;
+  String get _speechRate => _pSpeechRate ?? AppState.speechRate;
+  bool get _darkMode => AppState.themeMode.value == ThemeMode.dark;
+  String get _textSize => _pTextSize ?? AppState.textSize;
+  bool get _highContrast => _pHighContrast ?? AppState.highContrast;
   bool get _haptic => _pHaptic ?? AppState.hapticFeedback;
   bool get _hapticActions => _pHapticActions ?? AppState.hapticOnActions;
+  String get _vibration => _pVibration ?? AppState.vibrationIntensity;
   bool get _autoBackup => _pAutoBackup ?? AppState.autoBackup;
   String get _language => _pLanguage ?? AppState.language;
 
   void _mark() => setState(() => _dirty = true);
-
-  bool _groupDirty({required List<bool?> pending}) =>
-      pending.any((p) => p != null);
 
   void _save() {
     if (_pScreenReader != null) AppState.screenReaderHints = _pScreenReader!;
@@ -49,8 +55,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_pVoiceInput != null) AppState.voiceInput = _pVoiceInput!;
     if (_pReadAloud != null) AppState.readAloud = _pReadAloud!;
     if (_pAudioFeedback != null) AppState.audioFeedback = _pAudioFeedback!;
+    if (_pSpeechRate != null) AppState.speechRate = _pSpeechRate!;
+    if (_pTextSize != null) AppState.textSize = _pTextSize!;
+    if (_pHighContrast != null) AppState.highContrast = _pHighContrast!;
     if (_pHaptic != null) AppState.hapticFeedback = _pHaptic!;
     if (_pHapticActions != null) AppState.hapticOnActions = _pHapticActions!;
+    if (_pVibration != null) AppState.vibrationIntensity = _pVibration!;
     if (_pAutoBackup != null) AppState.autoBackup = _pAutoBackup!;
     if (_pLanguage != null) AppState.language = _pLanguage!;
     setState(() {
@@ -59,8 +69,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _pVoiceInput = null;
       _pReadAloud = null;
       _pAudioFeedback = null;
+      _pSpeechRate = null;
+      _pTextSize = null;
+      _pHighContrast = null;
       _pHaptic = null;
       _pHapticActions = null;
+      _pVibration = null;
       _pAutoBackup = null;
       _pLanguage = null;
       _dirty = false;
@@ -80,13 +94,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _pVoiceInput = null;
       _pReadAloud = null;
       _pAudioFeedback = null;
+      _pSpeechRate = null;
+      _pTextSize = null;
+      _pHighContrast = null;
       _pHaptic = null;
       _pHapticActions = null;
+      _pVibration = null;
       _pAutoBackup = null;
       _pLanguage = null;
       _dirty = false;
     });
   }
+
+  bool _groupDirty({required List<Object?> pending}) =>
+      pending.any((p) => p != null);
 
   @override
   Widget build(BuildContext context) {
@@ -137,26 +158,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => _openSheet(
                       title: 'Accessibility',
                       childrenBuilder: (rebuild) => [
-                        _switchTile(
-                          'Screen reader hints',
-                          'Announce actions and outcomes',
-                          _screenReader,
-                          (v) {
-                            _pScreenReader = v;
-                            _mark();
-                            rebuild();
-                          },
-                        ),
-                        _switchTile(
-                          'Focus indicators',
-                          'Show current element focus',
-                          _focusIndicators,
-                          (v) {
-                            _pFocusIndicators = v;
-                            _mark();
-                            rebuild();
-                          },
-                        ),
+                        _toggleRow('Screen reader hints', _screenReader, (v) {
+                          _pScreenReader = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _toggleRow('Focus indicators', _focusIndicators, (v) {
+                          _pFocusIndicators = v;
+                          _mark();
+                          rebuild();
+                        }),
                       ],
                     ),
                   ),
@@ -171,32 +182,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => _openSheet(
                       title: 'Speech',
                       childrenBuilder: (rebuild) => [
-                        _switchTile(
-                          'Voice input',
-                          'Allow voice commands',
-                          _voiceInput,
+                        _toggleRow('Voice input', _voiceInput, (v) {
+                          _pVoiceInput = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _toggleRow('Read aloud', _readAloud, (v) {
+                          _pReadAloud = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _toggleRow('Audio feedback', _audioFeedback, (v) {
+                          _pAudioFeedback = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _dropdownRow(
+                          'Speech rate',
+                          _speechRate,
+                          const ['Slow', 'Medium', 'Fast'],
                           (v) {
-                            _pVoiceInput = v;
-                            _mark();
-                            rebuild();
-                          },
-                        ),
-                        _switchTile(
-                          'Read aloud',
-                          'Read screen content aloud',
-                          _readAloud,
-                          (v) {
-                            _pReadAloud = v;
-                            _mark();
-                            rebuild();
-                          },
-                        ),
-                        _switchTile(
-                          'Audio feedback',
-                          'Play sounds on actions',
-                          _audioFeedback,
-                          (v) {
-                            _pAudioFeedback = v;
+                            _pSpeechRate = v;
                             _mark();
                             rebuild();
                           },
@@ -209,22 +215,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.visibility_outlined,
                     title: 'Appearance',
                     subtitle: 'Text, contrast, color, and layout',
-                    dirty: AppState.themeMode.value == ThemeMode.dark,
+                    dirty: _groupDirty(pending: [_pTextSize, _pHighContrast]),
                     onTap: () => _openSheet(
                       title: 'Appearance',
                       childrenBuilder: (rebuild) => [
-                        _switchTile(
-                          'Dark mode',
-                          'Use dark surfaces across the app',
-                          AppState.themeMode.value == ThemeMode.dark,
+                        _toggleRow('Dark mode', _darkMode, (v) {
+                          AppState.themeMode.value = v
+                              ? ThemeMode.dark
+                              : ThemeMode.light;
+                          _mark();
+                          rebuild();
+                        }),
+                        _dropdownRow(
+                          'Text size',
+                          _textSize,
+                          const ['Small', 'Medium', 'Large'],
                           (v) {
-                            AppState.themeMode.value = v
-                                ? ThemeMode.dark
-                                : ThemeMode.light;
-                            setState(() {});
+                            _pTextSize = v;
+                            _mark();
                             rebuild();
                           },
                         ),
+                        _toggleRow('High contrast', _highContrast, (v) {
+                          _pHighContrast = v;
+                          _mark();
+                          rebuild();
+                        }),
                       ],
                     ),
                   ),
@@ -237,22 +253,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => _openSheet(
                       title: 'Haptic Feedback',
                       childrenBuilder: (rebuild) => [
-                        _switchTile(
-                          'Enable haptics',
-                          'Vibrate on interactions',
-                          _haptic,
+                        _toggleRow('Enable haptics', _haptic, (v) {
+                          _pHaptic = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _toggleRow('Haptics on actions', _hapticActions, (v) {
+                          _pHapticActions = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _dropdownRow(
+                          'Vibration intensity',
+                          _vibration,
+                          const ['Low', 'Medium', 'High'],
                           (v) {
-                            _pHaptic = v;
-                            _mark();
-                            rebuild();
-                          },
-                        ),
-                        _switchTile(
-                          'Haptics on actions',
-                          'Vibrate on save and delete',
-                          _hapticActions,
-                          (v) {
-                            _pHapticActions = v;
+                            _pVibration = v;
                             _mark();
                             rebuild();
                           },
@@ -265,66 +281,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.settings_outlined,
                     title: 'General',
                     subtitle: 'Backup, language, and other preferences',
-                    dirty: _pAutoBackup != null || _pLanguage != null,
+                    dirty: _groupDirty(pending: [_pAutoBackup, _pLanguage]),
                     onTap: () => _openSheet(
                       title: 'General',
                       childrenBuilder: (rebuild) => [
-                        _switchTile(
-                          'Auto backup',
-                          'Back up preferences weekly',
-                          _autoBackup,
+                        _toggleRow('Auto backup', _autoBackup, (v) {
+                          _pAutoBackup = v;
+                          _mark();
+                          rebuild();
+                        }),
+                        _dropdownRow(
+                          'Language',
+                          _language,
+                          const ['English', 'Filipino', 'Spanish'],
                           (v) {
-                            _pAutoBackup = v;
+                            _pLanguage = v;
                             _mark();
                             rebuild();
-                          },
-                        ),
-                        Builder(
-                          builder: (context) {
-                            final t = Theme.of(context);
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                'Language',
-                                style: t.textTheme.bodyMedium?.copyWith(
-                                  color: _language != 'English'
-                                      ? t.colorScheme.secondary
-                                      : null,
-                                  fontWeight: _language != 'English'
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                              subtitle: Text(
-                                _language,
-                                style: t.textTheme.labelSmall,
-                              ),
-                              trailing: DropdownButton<String>(
-                                value: _language,
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 'English',
-                                    child: Text('English'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'Filipino',
-                                    child: Text('Filipino'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'Spanish',
-                                    child: Text('Spanish'),
-                                  ),
-                                ],
-                                onChanged: (v) {
-                                  if (v == null) return;
-                                  setState(() {
-                                    _pLanguage = v;
-                                    _dirty = true;
-                                  });
-                                  rebuild();
-                                },
-                              ),
-                            );
                           },
                         ),
                       ],
@@ -446,31 +419,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Switch tile that reads the current theme itself, so dark-mode changes
-  /// reach it. When value is true, the title turns teal so it stands out
-  /// against siblings that are still off.
-  Widget _switchTile(
-    String title,
-    String subtitle,
-    bool value,
-    ValueChanged<bool> onChanged,
+  /// Toggle row for a sheet: label on the left, switch on the right, teal
+  /// label when on. Tap anywhere on the row to flip it.
+  Widget _toggleRow(String label, bool value, ValueChanged<bool> onChanged) {
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Semantics(
+          toggled: value,
+          label: label,
+          child: InkWell(
+            onTap: () => onChanged(!value),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: value ? theme.colorScheme.secondary : null,
+                        fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: value,
+                    activeThumbColor: theme.colorScheme.secondary,
+                    onChanged: onChanged,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Dropdown row for a sheet: label on the left, small dropdown on the
+  /// right. Teal text when the value differs from the first option (which
+  /// is treated as the default).
+  Widget _dropdownRow(
+    String label,
+    String value,
+    List<String> options,
+    ValueChanged<String> onChanged,
   ) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
-        return SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            title,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: value ? theme.colorScheme.secondary : null,
-              fontWeight: value ? FontWeight.w600 : FontWeight.normal,
-            ),
+        final changed = options.first != value;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+              DropdownButton<String>(
+                value: value,
+                underline: const SizedBox.shrink(),
+                borderRadius: BorderRadius.circular(8),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: changed
+                      ? theme.colorScheme.secondary
+                      : theme.colorScheme.onSurface,
+                  fontWeight: changed ? FontWeight.w600 : FontWeight.normal,
+                ),
+                items: [
+                  for (final option in options)
+                    DropdownMenuItem(value: option, child: Text(option)),
+                ],
+                onChanged: (v) {
+                  if (v != null) onChanged(v);
+                },
+              ),
+            ],
           ),
-          subtitle: Text(subtitle, style: theme.textTheme.labelSmall),
-          value: value,
-          activeThumbColor: theme.colorScheme.secondary,
-          onChanged: onChanged,
         );
       },
     );
@@ -545,8 +569,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _pVoiceInput = null;
         _pReadAloud = null;
         _pAudioFeedback = null;
+        _pSpeechRate = null;
+        _pTextSize = null;
+        _pHighContrast = null;
         _pHaptic = null;
         _pHapticActions = null;
+        _pVibration = null;
         _pAutoBackup = null;
         _pLanguage = null;
       });
