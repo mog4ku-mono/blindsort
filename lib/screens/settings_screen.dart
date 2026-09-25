@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
 import '../state/app_state.dart';
-import '../theme.dart';
 
 /// Settings. Six groups of toggles with Save and Revert at the bottom when
 /// there are pending changes. Dark mode applies immediately so the user sees
@@ -15,7 +14,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Pending values. Null means "no change yet". Set when user toggles.
   bool? _pScreenReader;
   bool? _pFocusIndicators;
   bool? _pVoiceInput;
@@ -137,27 +135,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       pending: [_pScreenReader, _pFocusIndicators],
                     ),
                     onTap: () => _openSheet(
-                      theme,
                       title: 'Accessibility',
-                      children: [
+                      childrenBuilder: (rebuild) => [
                         _switchTile(
-                          theme,
                           'Screen reader hints',
                           'Announce actions and outcomes',
                           _screenReader,
                           (v) {
                             _pScreenReader = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                         _switchTile(
-                          theme,
                           'Focus indicators',
                           'Show current element focus',
                           _focusIndicators,
                           (v) {
                             _pFocusIndicators = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                       ],
@@ -172,37 +169,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       pending: [_pVoiceInput, _pReadAloud, _pAudioFeedback],
                     ),
                     onTap: () => _openSheet(
-                      theme,
                       title: 'Speech',
-                      children: [
+                      childrenBuilder: (rebuild) => [
                         _switchTile(
-                          theme,
                           'Voice input',
                           'Allow voice commands',
                           _voiceInput,
                           (v) {
                             _pVoiceInput = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                         _switchTile(
-                          theme,
                           'Read aloud',
                           'Read screen content aloud',
                           _readAloud,
                           (v) {
                             _pReadAloud = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                         _switchTile(
-                          theme,
                           'Audio feedback',
                           'Play sounds on actions',
                           _audioFeedback,
                           (v) {
                             _pAudioFeedback = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                       ],
@@ -215,11 +211,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle: 'Text, contrast, color, and layout',
                     dirty: AppState.themeMode.value == ThemeMode.dark,
                     onTap: () => _openSheet(
-                      theme,
                       title: 'Appearance',
-                      children: [
+                      childrenBuilder: (rebuild) => [
                         _switchTile(
-                          theme,
                           'Dark mode',
                           'Use dark surfaces across the app',
                           AppState.themeMode.value == ThemeMode.dark,
@@ -228,6 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ? ThemeMode.dark
                                 : ThemeMode.light;
                             setState(() {});
+                            rebuild();
                           },
                         ),
                       ],
@@ -240,27 +235,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle: 'Vibration and touch feedback',
                     dirty: _groupDirty(pending: [_pHaptic, _pHapticActions]),
                     onTap: () => _openSheet(
-                      theme,
                       title: 'Haptic Feedback',
-                      children: [
+                      childrenBuilder: (rebuild) => [
                         _switchTile(
-                          theme,
                           'Enable haptics',
                           'Vibrate on interactions',
                           _haptic,
                           (v) {
                             _pHaptic = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                         _switchTile(
-                          theme,
                           'Haptics on actions',
                           'Vibrate on save and delete',
                           _hapticActions,
                           (v) {
                             _pHapticActions = v;
                             _mark();
+                            rebuild();
                           },
                         ),
                       ],
@@ -273,47 +267,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle: 'Backup, language, and other preferences',
                     dirty: _pAutoBackup != null || _pLanguage != null,
                     onTap: () => _openSheet(
-                      theme,
                       title: 'General',
-                      children: [
+                      childrenBuilder: (rebuild) => [
                         _switchTile(
-                          theme,
                           'Auto backup',
                           'Back up preferences weekly',
                           _autoBackup,
                           (v) {
                             _pAutoBackup = v;
                             _mark();
+                            rebuild();
                           },
                         ),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('Language'),
-                          subtitle: Text(_language),
-                          trailing: DropdownButton<String>(
-                            value: _language,
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'English',
-                                child: Text('English'),
+                        Builder(
+                          builder: (context) {
+                            final t = Theme.of(context);
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                'Language',
+                                style: t.textTheme.bodyMedium?.copyWith(
+                                  color: _language != 'English'
+                                      ? t.colorScheme.secondary
+                                      : null,
+                                  fontWeight: _language != 'English'
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
                               ),
-                              DropdownMenuItem(
-                                value: 'Filipino',
-                                child: Text('Filipino'),
+                              subtitle: Text(
+                                _language,
+                                style: t.textTheme.labelSmall,
                               ),
-                              DropdownMenuItem(
-                                value: 'Spanish',
-                                child: Text('Spanish'),
+                              trailing: DropdownButton<String>(
+                                value: _language,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'English',
+                                    child: Text('English'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Filipino',
+                                    child: Text('Filipino'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Spanish',
+                                    child: Text('Spanish'),
+                                  ),
+                                ],
+                                onChanged: (v) {
+                                  if (v == null) return;
+                                  setState(() {
+                                    _pLanguage = v;
+                                    _dirty = true;
+                                  });
+                                  rebuild();
+                                },
                               ),
-                            ],
-                            onChanged: (v) {
-                              if (v == null) return;
-                              setState(() {
-                                _pLanguage = v;
-                                _dirty = true;
-                              });
-                            },
-                          ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -434,49 +446,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Switch tile that reads the current theme itself, so dark-mode changes
+  /// reach it. When value is true, the title turns teal so it stands out
+  /// against siblings that are still off.
   Widget _switchTile(
-    ThemeData theme,
     String title,
     String subtitle,
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title, style: theme.textTheme.bodyMedium),
-      subtitle: Text(subtitle, style: theme.textTheme.labelSmall),
-      value: value,
-      activeThumbColor: theme.colorScheme.secondary,
-      onChanged: onChanged,
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            title,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: value ? theme.colorScheme.secondary : null,
+              fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          subtitle: Text(subtitle, style: theme.textTheme.labelSmall),
+          value: value,
+          activeThumbColor: theme.colorScheme.secondary,
+          onChanged: onChanged,
+        );
+      },
     );
   }
 
-  void _openSheet(
-    ThemeData theme, {
+  void _openSheet({
     required String title,
-    required List<Widget> children,
+    required List<Widget> Function(void Function() rebuild) childrenBuilder,
   }) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.lg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: AppSpacing.sm),
-              for (final child in children) child,
-            ],
-          ),
-        ),
+        builder: (context, setSheetState) {
+          final currentTheme = Theme.of(context);
+          final children = childrenBuilder(() => setSheetState(() {}));
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: currentTheme.textTheme.headlineSmall),
+                const SizedBox(height: AppSpacing.sm),
+                for (final child in children) child,
+              ],
+            ),
+          );
+        },
       ),
     ).then((_) {
       if (mounted) setState(() {});

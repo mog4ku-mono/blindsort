@@ -28,6 +28,8 @@ class BlindSortApp extends StatelessWidget {
         theme: appTheme,
         darkTheme: darkAppTheme,
         themeMode: mode,
+        themeAnimationDuration: const Duration(milliseconds: 350),
+        themeAnimationCurve: Curves.easeInOut,
         home: const HomeScreen(),
       ),
     );
