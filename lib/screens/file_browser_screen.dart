@@ -52,59 +52,74 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
+      body: Column(
         children: [
+          const Divider(height: 1),
           _breadcrumb(theme),
-          const SizedBox(height: AppSpacing.md),
-          _tabs(theme),
-          const SizedBox(height: AppSpacing.md),
-          _categoryRow(),
-          const SizedBox(height: AppSpacing.md),
-          _filesAndFoldersHeader(theme),
-          const SizedBox(height: AppSpacing.sm),
-          _folderList(),
-          const SizedBox(height: AppSpacing.sm),
-          _fileList(),
+          const Divider(height: 1, thickness: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              children: [
+                _tabs(theme),
+                const SizedBox(height: AppSpacing.md),
+                _categoryRow(),
+                const SizedBox(height: AppSpacing.md),
+                _filesAndFoldersHeader(theme),
+                const SizedBox(height: AppSpacing.sm),
+                _folderGroup(),
+                const SizedBox(height: AppSpacing.sm),
+                _fileGroup(theme),
+              ],
+            ),
+          ),
         ],
       ),
+      bottomNavigationBar: _bottomBar(theme),
     );
   }
 
-  Widget _breadcrumb(ThemeData theme) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'Current location',
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.secondary,
+  Widget _breadcrumb(ThemeData theme) => Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.sm,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Current location',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.secondary,
+          ),
         ),
-      ),
-      const SizedBox(height: AppSpacing.xs),
-      Row(
-        children: [
-          Icon(
-            Icons.folder_outlined,
-            size: 20,
-            color: theme.colorScheme.onSurface,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            'Internal Storage  ›  Documents',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const Spacer(),
-          const Icon(Icons.chevron_right),
-        ],
-      ),
-    ],
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Icon(
+              Icons.folder_outlined,
+              size: 20,
+              color: theme.colorScheme.onSurface,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Internal Storage  ›  Documents',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const Spacer(),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ],
+    ),
   );
 
   Widget _tabs(ThemeData theme) => Container(
     decoration: BoxDecoration(
-      border: Border.all(color: theme.colorScheme.outlineVariant),
+      color: theme.colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
     ),
+    padding: const EdgeInsets.all(4),
     child: Row(
       children: [
         Expanded(child: _tabButton('Categories', 0, theme)),
@@ -203,17 +218,84 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     ],
   );
 
-  Widget _folderList() => Column(
-    children: [
-      for (final folder in sampleFolders)
-        FolderListItem(folder: folder, onTap: () {}),
-    ],
+  Widget _folderGroup() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < sampleFolders.length; i++) ...[
+            FolderListItem(folder: sampleFolders[i], onTap: () {}),
+            if (i < sampleFolders.length - 1)
+              Divider(
+                height: 1,
+                indent: AppSpacing.md,
+                endIndent: AppSpacing.md,
+                color: theme.colorScheme.outlineVariant,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _fileGroup(ThemeData theme) => Container(
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: theme.colorScheme.outlineVariant),
+    ),
+    child: Column(
+      children: [
+        for (var i = 0; i < sampleFiles.length; i++) ...[
+          FileListItem(file: sampleFiles[i], onTap: () {}),
+          if (i < sampleFiles.length - 1)
+            Divider(
+              height: 1,
+              indent: AppSpacing.md,
+              endIndent: AppSpacing.md,
+              color: theme.colorScheme.outlineVariant,
+            ),
+        ],
+      ],
+    ),
   );
 
-  Widget _fileList() => Column(
-    children: [
-      for (final file in sampleFiles) FileListItem(file: file, onTap: () {}),
-    ],
+  Widget _bottomBar(ThemeData theme) => Container(
+    decoration: BoxDecoration(
+      border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+    ),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.sm,
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.home_outlined, color: theme.colorScheme.secondary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          'Home',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.secondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'Filter & Sort',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.secondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Icon(Icons.grid_view, color: theme.colorScheme.secondary),
+      ],
+    ),
   );
 }
 
