@@ -2,20 +2,36 @@ import 'package:flutter/material.dart';
 
 import 'constants/app_spacing.dart';
 
-/// The BlindSort seed color. Material 3 generates the full ColorScheme from
-/// this one value, so widget code references semantic roles (primary, surface,
-/// onSurface) instead of picking colors per screen.
+/// BlindSort seed color. Material 3 generates the full ColorScheme from this
+/// one value, so widgets reference semantic roles instead of picking colors
+/// per screen.
 const Color kSeedColor = Color(0xFF1565C0);
 
-/// The application theme. Three text roles cover the four approved screens:
-/// heading, body, caption. Kept to light mode for the capstone; widgets still
-/// read through Theme.of(context) so a future dark scheme needs no rewrite.
+/// Teal from the design system mockup. Used as the secondary role so the
+/// Voice Search hero, section header icons, and category tiles read the way
+/// the high-fidelity mockup does.
+const Color kSecondaryTeal = Color(0xFF26A69A);
+
+/// Tint behind secondary icons (settings rows, category tiles, folder rows).
+/// Light enough that the teal icon stays legible without a dark ring.
+const Color kSecondaryContainer = Color(0xFFE0F2F1);
+
+/// Dark teal for icons/text that sit on the container tint.
+const Color kOnSecondaryContainer = Color(0xFF00695C);
+
+/// The application theme. Light mode only for the capstone.
 final ThemeData appTheme = ThemeData(
   useMaterial3: true,
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: kSeedColor,
-    brightness: Brightness.light,
-  ),
+  colorScheme:
+      ColorScheme.fromSeed(
+        seedColor: kSeedColor,
+        brightness: Brightness.light,
+      ).copyWith(
+        secondary: kSecondaryTeal,
+        onSecondary: Colors.white,
+        secondaryContainer: kSecondaryContainer,
+        onSecondaryContainer: kOnSecondaryContainer,
+      ),
   textTheme: const TextTheme(
     headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
     bodyMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
