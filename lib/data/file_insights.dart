@@ -1,22 +1,31 @@
-/// One file's AI Summary block and preview content. Controlled data for the
+/// One page inside the preview carousel on File Details.
+class PreviewPage {
+  final String title;
+  final String subtitle;
+  final List<String> bullets;
+  final bool hasDiagram;
+
+  const PreviewPage({
+    required this.title,
+    required this.subtitle,
+    required this.bullets,
+    this.hasDiagram = false,
+  });
+}
+
+/// One file's AI Summary block and preview pages. Controlled data for the
 /// browser demo; a live model lands in a later branch.
 class FileInsight {
   final String summary;
   final List<String> themes;
   final int? pageCount;
-  final String previewTitle;
-  final String previewSubtitle;
-  final List<String> previewBullets;
-  final bool previewHasDiagram;
+  final List<PreviewPage> pages;
 
   const FileInsight({
     required this.summary,
     required this.themes,
-    required this.previewTitle,
-    required this.previewSubtitle,
-    required this.previewBullets,
+    required this.pages,
     this.pageCount,
-    this.previewHasDiagram = false,
   });
 }
 
@@ -28,10 +37,24 @@ const Map<String, FileInsight> kFileInsights = {
         'practice exercises.',
     themes: ['Relational Model', 'Normalization', 'SQL', 'Exercises'],
     pageCount: 24,
-    previewTitle: 'DATABASE SYSTEMS',
-    previewSubtitle: 'Lecture 3 - Relational Model',
-    previewBullets: ['Table Structure', 'Keys and Relationships', 'SQL Basics'],
-    previewHasDiagram: true,
+    pages: [
+      PreviewPage(
+        title: 'DATABASE SYSTEMS',
+        subtitle: 'Lecture 3 - Relational Model',
+        bullets: ['Table Structure', 'Keys and Relationships', 'SQL Basics'],
+        hasDiagram: true,
+      ),
+      PreviewPage(
+        title: 'DATABASE SYSTEMS',
+        subtitle: 'Lecture 3 - Normalization',
+        bullets: ['1NF', '2NF', '3NF'],
+      ),
+      PreviewPage(
+        title: 'DATABASE SYSTEMS',
+        subtitle: 'Lecture 3 - SQL Queries',
+        bullets: ['SELECT', 'JOIN', 'Aggregates'],
+      ),
+    ],
   ),
   'f2': FileInsight(
     summary:
@@ -39,12 +62,21 @@ const Map<String, FileInsight> kFileInsights = {
         'OSI model, TCP/IP stack, and a case study on campus Wi-Fi.',
     themes: ['OSI Model', 'TCP/IP', 'Wi-Fi', 'Case Study'],
     pageCount: 18,
-    previewTitle: 'COMPUTER NETWORKS',
-    previewSubtitle: 'Group Presentation',
-    previewBullets: [
-      'Layered Architecture',
-      'Packet Routing',
-      'Wireless Protocols',
+    pages: [
+      PreviewPage(
+        title: 'COMPUTER NETWORKS',
+        subtitle: 'Group Presentation',
+        bullets: [
+          'Layered Architecture',
+          'Packet Routing',
+          'Wireless Protocols',
+        ],
+      ),
+      PreviewPage(
+        title: 'COMPUTER NETWORKS',
+        subtitle: 'Case Study - Campus Wi-Fi',
+        bullets: ['Coverage Maps', 'Load Balancing', 'Observations'],
+      ),
     ],
   ),
   'f3': FileInsight(
@@ -54,13 +86,12 @@ const Map<String, FileInsight> kFileInsights = {
         'studies.',
     themes: ['TDD', 'Case Studies', 'Best Practices'],
     pageCount: 12,
-    previewTitle: 'SOFTWARE ENGINEERING',
-    previewSubtitle: 'Final Paper',
-    previewBullets: [
-      'Abstract',
-      'Literature Review',
-      'Methodology',
-      'Findings',
+    pages: [
+      PreviewPage(
+        title: 'SOFTWARE ENGINEERING',
+        subtitle: 'Final Paper',
+        bullets: ['Abstract', 'Literature Review', 'Methodology', 'Findings'],
+      ),
     ],
   ),
   'f4': FileInsight(
@@ -69,9 +100,13 @@ const Map<String, FileInsight> kFileInsights = {
         'integrals, and trig identities.',
     themes: ['Derivatives', 'Integrals', 'Trigonometry'],
     pageCount: 1,
-    previewTitle: 'CALCULUS',
-    previewSubtitle: 'Formula Reference Sheet',
-    previewBullets: ['Power Rule', 'Chain Rule', 'Integration by Parts'],
+    pages: [
+      PreviewPage(
+        title: 'CALCULUS',
+        subtitle: 'Formula Reference Sheet',
+        bullets: ['Power Rule', 'Chain Rule', 'Integration by Parts'],
+      ),
+    ],
   ),
   'f5': FileInsight(
     summary:
@@ -79,12 +114,12 @@ const Map<String, FileInsight> kFileInsights = {
         'schematics, measured voltages, and a comparison against simulation.',
     themes: ['Logic Gates', 'Measurements', 'Simulation'],
     pageCount: 8,
-    previewTitle: 'DIGITAL CIRCUITS',
-    previewSubtitle: 'Lab Report - Week 7',
-    previewBullets: [
-      'Objectives',
-      'Circuit Diagrams',
-      'Results and Discussion',
+    pages: [
+      PreviewPage(
+        title: 'DIGITAL CIRCUITS',
+        subtitle: 'Lab Report - Week 7',
+        bullets: ['Objectives', 'Circuit Diagrams', 'Results and Discussion'],
+      ),
     ],
   ),
   'f8': FileInsight(
@@ -93,12 +128,16 @@ const Map<String, FileInsight> kFileInsights = {
         'SJF, and Round Robin with worked examples.',
     themes: ['FCFS', 'SJF', 'Round Robin'],
     pageCount: 20,
-    previewTitle: 'OPERATING SYSTEMS',
-    previewSubtitle: 'Lecture 4 - Scheduling',
-    previewBullets: [
-      'Process States',
-      'Scheduling Algorithms',
-      'Performance Metrics',
+    pages: [
+      PreviewPage(
+        title: 'OPERATING SYSTEMS',
+        subtitle: 'Lecture 4 - Scheduling',
+        bullets: [
+          'Process States',
+          'Scheduling Algorithms',
+          'Performance Metrics',
+        ],
+      ),
     ],
   ),
 };
@@ -114,8 +153,12 @@ FileInsight insightFor(String fileId, String fileName, String fileType) {
         '$fileName is a $fileType file. Its contents can be read aloud to '
         'you or opened to view the original.',
     themes: [fileType, 'No preview available'],
-    previewTitle: fileType,
-    previewSubtitle: fileName,
-    previewBullets: const ['Preview not available for this file type yet.'],
+    pages: [
+      PreviewPage(
+        title: fileType,
+        subtitle: fileName,
+        bullets: const ['Preview not available for this file type yet.'],
+      ),
+    ],
   );
 }

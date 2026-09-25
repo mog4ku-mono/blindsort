@@ -5,12 +5,12 @@ import '../constants/file_type_colors.dart';
 import '../data/file_insights.dart';
 import '../models/file_item.dart';
 import '../state/app_state.dart';
+import '../theme.dart';
 import '../widgets/file_actions_sheet.dart';
 
-/// File Details. Hero block, AI Summary, Preview, Details, and Actions.
-/// Every action button does something: Open and Locate surface a message
-/// because real file access is a Week 3 task; Share opens the platform
-/// share sheet via the same file actions menu.
+/// File Details. Hero block, AI Summary, swipeable Preview, Details, and
+/// Actions. Every action button does something: Open shows a placeholder,
+/// Share opens a share sheet, Locate shows a snackbar.
 class FileDetailsScreen extends StatefulWidget {
   final FileItem file;
 
@@ -23,13 +23,27 @@ class FileDetailsScreen extends StatefulWidget {
 class _FileDetailsScreenState extends State<FileDetailsScreen> {
   bool _expandedSummary = false;
   int _previewPage = 0;
+  late final PageController _pageController;
 
   FileItem get file => widget.file;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final insight = insightFor(file.id, file.name, file.type);
+    final pages = insight.pages;
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +86,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
                 const SizedBox(height: AppSpacing.md),
                 _summarySection(theme, insight),
                 const SizedBox(height: AppSpacing.md),
-                _previewSection(theme, insight),
+                _previewSection(theme, pages),
                 const SizedBox(height: AppSpacing.md),
                 _detailsSection(theme),
                 const SizedBox(height: AppSpacing.md),
@@ -169,7 +183,9 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(
+          color: theme.colorScheme.secondary.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +201,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
               Text(
                 'AI SUMMARY',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.secondary,
+                  color: kFolderTeal,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                 ),
@@ -247,8 +263,12 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
               icon: Icon(
                 _expandedSummary ? Icons.expand_less : Icons.expand_more,
                 size: 18,
+                color: theme.colorScheme.secondary,
               ),
-              label: Text(_expandedSummary ? 'Show less' : 'Show more'),
+              label: Text(
+                _expandedSummary ? 'Show less' : 'Show more',
+                style: TextStyle(color: theme.colorScheme.secondary),
+              ),
             ),
           ),
         ],
@@ -256,7 +276,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
     );
   }
 
-  Widget _previewSection(ThemeData theme, FileInsight insight) {
+  Widget _previewSection(ThemeData theme, List<PreviewPage> pages) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -265,7 +285,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
             Text(
               'PREVIEW',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.secondary,
+                color: kFolderTeal,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
               ),
@@ -281,82 +301,107 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
+            color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(
+              color: theme.colorScheme.secondary.withValues(alpha: 0.35),
+            ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      insight.previewTitle,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      insight.previewSubtitle,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    for (final b in insight.previewBullets)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('• '),
-                            Expanded(
-                              child: Text(b, style: theme.textTheme.labelSmall),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (insight.previewHasDiagram) ...[
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(flex: 2, child: _diagram(theme)),
-              ],
-            ],
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            height: 200,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: pages.length,
+              onPageChanged: (i) => setState(() => _previewPage = i),
+              itemBuilder: (_, i) => _previewPageContent(theme, pages[i]),
+            ),
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (var i = 0; i < 3; i++)
-              GestureDetector(
-                onTap: () => setState(() => _previewPage = i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                  width: _previewPage == i ? 10 : 8,
-                  height: _previewPage == i ? 10 : 8,
-                  decoration: BoxDecoration(
-                    color: _previewPage == i
-                        ? theme.colorScheme.secondary
-                        : theme.colorScheme.outlineVariant,
-                    shape: BoxShape.circle,
+        if (pages.length > 1) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < pages.length; i++)
+                GestureDetector(
+                  onTap: () => _pageController.animateToPage(
+                    i,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOut,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                    ),
+                    width: _previewPage == i ? 10 : 8,
+                    height: _previewPage == i ? 10 : 8,
+                    decoration: BoxDecoration(
+                      color: _previewPage == i
+                          ? theme.colorScheme.secondary
+                          : theme.colorScheme.outlineVariant,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _previewPageContent(ThemeData theme, PreviewPage page) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  page.title,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  page.subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                for (final b in page.bullets)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• '),
+                        Expanded(
+                          child: Text(b, style: theme.textTheme.labelSmall),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (page.hasDiagram) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(flex: 2, child: _diagram(theme)),
+          ],
+        ],
+      ),
     );
   }
 
@@ -394,7 +439,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
         Text(
           'DETAILS',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.secondary,
+            color: kFolderTeal,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
@@ -483,7 +528,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
         Text(
           'ACTIONS',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.secondary,
+            color: kFolderTeal,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
@@ -499,6 +544,9 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
                   backgroundColor: theme.colorScheme.secondary,
                   foregroundColor: theme.colorScheme.onSecondary,
                   minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
                 icon: const Icon(Icons.visibility_outlined, size: 20),
                 label: const Text('Open'),
@@ -511,6 +559,9 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
                 onPressed: _onShare,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
                 icon: const Icon(Icons.share_outlined, size: 20),
                 label: const Text('Share'),
@@ -525,6 +576,9 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
                   backgroundColor: theme.colorScheme.secondary,
                   foregroundColor: theme.colorScheme.onSecondary,
                   minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
                 icon: const Icon(Icons.folder_outlined, size: 20),
                 label: const Text('Locate'),
@@ -610,34 +664,41 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
       border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
     ),
     padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.md,
-      vertical: AppSpacing.sm,
+      horizontal: AppSpacing.sm,
+      vertical: AppSpacing.xs,
     ),
     child: Row(
       children: [
-        Icon(Icons.home_outlined, color: theme.colorScheme.secondary),
-        const SizedBox(width: AppSpacing.xs),
-        Text(
-          'Home',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.secondary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const Spacer(),
-        InkWell(
-          onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
-            ),
-            child: Text(
-              'Back to Home',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.secondary,
-                fontWeight: FontWeight.w600,
+        Expanded(
+          child: Semantics(
+            button: true,
+            label: 'Home',
+            child: InkWell(
+              onTap: () =>
+                  Navigator.of(context).popUntil((route) => route.isFirst),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.home_outlined,
+                      color: theme.colorScheme.secondary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Home',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
