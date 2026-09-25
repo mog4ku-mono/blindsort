@@ -1,12 +1,14 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 
+import 'data/sample_files.dart';
 import 'screens/home_screen.dart';
+import 'state/app_state.dart';
 import 'theme.dart';
 
 void main() {
+  AppState.init(sampleFiles);
   runApp(
-    // device_preview keeps the browser demo at phone size.
     DevicePreview(enabled: true, builder: (context) => const BlindSortApp()),
   );
 }
