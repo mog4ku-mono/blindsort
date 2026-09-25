@@ -1,9 +1,8 @@
 import '../models/file_item.dart';
 
 /// Controlled dataset for the browser build. Real Android file access is the
-/// target on device, but the web demo needs files to exercise the full flow,
-/// so the same list feeds every screen until device integration is in place.
-/// All names are synthetic; no real student data.
+/// target on device; the web demo needs files to exercise the full flow. All
+/// names are synthetic; no real student data.
 final List<FileItem> sampleFiles = [
   FileItem(
     id: 'f1',
@@ -54,5 +53,61 @@ final List<FileItem> sampleFiles = [
     location: 'Internal Storage > Documents',
     sizeMb: 3.8,
     modifiedAt: DateTime(2026, 5, 15, 11, 0),
+  ),
+  FileItem(
+    id: 'f7',
+    name: 'blindsort_logo.png',
+    type: 'PNG',
+    location: 'Internal Storage > Pictures',
+    sizeMb: 2.4,
+    modifiedAt: DateTime(2026, 5, 14, 8, 15),
+  ),
+  FileItem(
+    id: 'f8',
+    name: 'red-running-shoes.jpg',
+    type: 'JPG',
+    location: 'Internal Storage > Pictures',
+    sizeMb: 5.1,
+    modifiedAt: DateTime(2026, 5, 13, 18, 20),
+  ),
+  FileItem(
+    id: 'f9',
+    name: 'Breaking_Bad_-_S01E01.mkv',
+    type: 'MKV',
+    location: 'Internal Storage > Movies',
+    sizeMb: 2048.0,
+    modifiedAt: DateTime(2026, 5, 5, 22, 0),
+  ),
+  FileItem(
+    id: 'f10',
+    name: 'VID_20260713_211900.mp4',
+    type: 'MP4',
+    location: 'Internal Storage > DCIM',
+    sizeMb: 11.6,
+    modifiedAt: DateTime(2026, 4, 27, 21, 19),
+  ),
+  FileItem(
+    id: 'f11',
+    name: 'Color-Your-Night.mp3',
+    type: 'MP3',
+    location: 'Internal Storage > Music',
+    sizeMb: 3.2,
+    modifiedAt: DateTime(2026, 4, 25, 20, 0),
+  ),
+  FileItem(
+    id: 'f12',
+    name: 'whatsapp-installer.apk',
+    type: 'APK',
+    location: 'Internal Storage > Download',
+    sizeMb: 42.0,
+    modifiedAt: DateTime(2026, 4, 20, 10, 0),
+  ),
+  FileItem(
+    id: 'f13',
+    name: 'chrome-download.zip',
+    type: 'ZIP',
+    location: 'Internal Storage > Download',
+    sizeMb: 128.0,
+    modifiedAt: DateTime(2026, 4, 18, 15, 30),
   ),
 ];
