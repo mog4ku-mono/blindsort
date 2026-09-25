@@ -308,7 +308,8 @@ class AppDrawer extends StatelessWidget {
           'low-vision users. It speaks file names, types, and metadata so '
           'you can find what you need without reading a screen.\n\n'
           'Long-press a file to favorite, add to a folder, or delete. Tap a '
-          'file to see details and an AI summary.',
+          'file to see details and an AI summary.\n\n'
+          'Developer: alfred [@mog4ku-mono]',
           style: theme.textTheme.bodyMedium,
         ),
         actions: [
