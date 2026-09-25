@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
+import '../data/sample_folders.dart';
 import '../models/file_item.dart';
+import '../models/folder_item.dart';
 import '../state/app_state.dart';
 
-/// Shared file long-press sheet. Favorites, Add to folder, and one
-/// Remove-from row per custom folder the file currently lives in.
 Future<void> showFileActions(
   BuildContext context,
   FileItem file, {
   required VoidCallback onChanged,
 }) async {
   final theme = Theme.of(context);
-  final containing = AppState.customFolders
+  final allFolders = [
+    ...sampleFolders.where((f) => !AppState.isFolderDeleted(f.name)),
+    ...AppState.customFolders.where((f) => !AppState.isFolderDeleted(f.name)),
+  ];
+  final containing = allFolders
       .where((f) => (AppState.folderContents[f.name] ?? {}).contains(file.id))
       .toList();
 
@@ -59,16 +63,10 @@ Future<void> showFileActions(
               color: theme.colorScheme.secondary,
             ),
             title: const Text('Add to folder...'),
-            enabled: AppState.customFolders.isNotEmpty,
-            subtitle: AppState.customFolders.isEmpty
-                ? const Text('Create a folder first from the Folders tab')
-                : null,
-            onTap: AppState.customFolders.isEmpty
-                ? null
-                : () {
-                    Navigator.pop(sheetContext);
-                    showFolderPicker(context, file, onChanged: onChanged);
-                  },
+            onTap: () {
+              Navigator.pop(sheetContext);
+              _showFolderPicker(context, file, allFolders, onChanged);
+            },
           ),
           for (final folder in containing)
             ListTile(
@@ -83,18 +81,53 @@ Future<void> showFileActions(
                 onChanged();
               },
             ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+            title: Text(
+              'Delete file',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+            onTap: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Delete file?'),
+                  content: Text('"${file.name}" will be removed.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true) {
+                AppState.deleteFile(file.id);
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
+                onChanged();
+              }
+            },
+          ),
         ],
       ),
     ),
   );
 }
 
-/// Picks which custom folder to add a file to.
-Future<void> showFolderPicker(
+Future<void> _showFolderPicker(
   BuildContext context,
-  FileItem file, {
-  required VoidCallback onChanged,
-}) async {
+  FileItem file,
+  List<FolderItem> allFolders,
+  VoidCallback onChanged,
+) async {
   final theme = Theme.of(context);
   await showModalBottomSheet<void>(
     context: context,
@@ -116,7 +149,7 @@ Future<void> showFolderPicker(
               style: theme.textTheme.headlineSmall,
             ),
           ),
-          for (final folder in AppState.customFolders)
+          for (final folder in allFolders)
             ListTile(
               leading: Icon(Icons.folder, color: theme.colorScheme.secondary),
               title: Text(folder.name),
