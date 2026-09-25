@@ -267,36 +267,80 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   Widget _bottomBar(ThemeData theme) => Container(
     decoration: BoxDecoration(
+      color: theme.colorScheme.surface,
       border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
     ),
     padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.md,
-      vertical: AppSpacing.sm,
+      horizontal: AppSpacing.sm,
+      vertical: AppSpacing.xs,
     ),
     child: Row(
       children: [
-        Icon(Icons.home_outlined, color: theme.colorScheme.secondary),
-        const SizedBox(width: AppSpacing.xs),
-        Text(
-          'Home',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.secondary,
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: _bottomBarButton(
+            icon: Icons.home_outlined,
+            label: 'Home',
+            onTap: () {},
+            theme: theme,
           ),
         ),
-        const Spacer(),
-        Text(
-          'Filter & Sort',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.secondary,
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: _bottomBarButton(
+            icon: Icons.grid_view,
+            label: 'Filter & Sort',
+            onTap: () {},
+            theme: theme,
+            iconAfterLabel: true,
           ),
         ),
-        const SizedBox(width: AppSpacing.xs),
-        Icon(Icons.grid_view, color: theme.colorScheme.secondary),
       ],
     ),
   );
+
+  Widget _bottomBarButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeData theme,
+    bool iconAfterLabel = false,
+  }) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            mainAxisAlignment: iconAfterLabel
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            children: [
+              if (!iconAfterLabel) ...[
+                Icon(icon, color: theme.colorScheme.secondary, size: 22),
+                const SizedBox(width: AppSpacing.xs),
+              ],
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (iconAfterLabel) ...[
+                const SizedBox(width: AppSpacing.xs),
+                Icon(icon, color: theme.colorScheme.secondary, size: 22),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void _noop() {}
