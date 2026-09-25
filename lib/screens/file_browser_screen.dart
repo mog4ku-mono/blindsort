@@ -5,6 +5,7 @@ import '../constants/category_colors.dart';
 import '../constants/file_type_colors.dart';
 import '../data/sample_files.dart';
 import '../data/sample_folders.dart';
+import '../models/file_item.dart';
 import '../models/folder_item.dart';
 import '../state/app_state.dart';
 import '../widgets/category_navigation_item.dart';
@@ -12,6 +13,7 @@ import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/file_multi_picker.dart';
 import '../widgets/folder_list_item.dart';
+import 'file_details_screen.dart';
 
 enum SortMode { recent, name, size }
 
@@ -28,7 +30,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   int _tabIndex = 0;
   String? _categoryFilter;
   String? _folderFilter;
-  String? _selectedFileId;
   SortMode _sort = SortMode.recent;
 
   @override
@@ -42,7 +43,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     ...AppState.customFolders.where((f) => !AppState.isFolderDeleted(f.name)),
   ];
 
-  List get _visibleFiles {
+  List<FileItem> get _visibleFiles {
     var list = sampleFiles.where((f) => !AppState.isDeleted(f.id)).toList();
 
     if (_categoryFilter == 'Favorites') {
@@ -224,6 +225,15 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         ),
       ),
     );
+  }
+
+  void _openDetails(FileItem file) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => FileDetailsScreen(file: file)),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -657,12 +667,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             FileListItem(
               file: files[i],
               isFavorite: AppState.isFavorite(files[i].id),
-              isSelected: _selectedFileId == files[i].id,
-              onTap: () => setState(() {
-                _selectedFileId = _selectedFileId == files[i].id
-                    ? null
-                    : files[i].id;
-              }),
+              onTap: () => _openDetails(files[i]),
               onLongPress: () => showFileActions(
                 context,
                 files[i],
