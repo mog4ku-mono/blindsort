@@ -15,10 +15,6 @@ import '../widgets/folder_list_item.dart';
 
 enum SortMode { recent, name, size }
 
-/// File Browser. Categories tab shows tiles, folders, and files; Folders tab
-/// shows only folders. Tapping a folder narrows the file list; long-pressing
-/// a file opens the shared actions sheet; a custom folder view carries a
-/// + button for adding or removing its files.
 class FileBrowserScreen extends StatefulWidget {
   final String? initialCategory;
 
@@ -42,12 +38,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   }
 
   List<FolderItem> get _allFolders => [
-    ...sampleFolders,
-    ...AppState.customFolders,
+    ...sampleFolders.where((f) => !AppState.isFolderDeleted(f.name)),
+    ...AppState.customFolders.where((f) => !AppState.isFolderDeleted(f.name)),
   ];
 
   List get _visibleFiles {
-    var list = sampleFiles;
+    var list = sampleFiles.where((f) => !AppState.isDeleted(f.id)).toList();
 
     if (_categoryFilter == 'Favorites') {
       list = list.where((f) => AppState.isFavorite(f.id)).toList();
@@ -60,12 +56,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
 
     if (_folderFilter != null) {
-      if (AppState.isCustomFolder(_folderFilter!)) {
-        final ids = AppState.folderContents[_folderFilter] ?? {};
-        list = list.where((f) => ids.contains(f.id)).toList();
-      } else {
-        list = list.where((f) => f.location.contains(_folderFilter!)).toList();
-      }
+      final ids = AppState.filesInFolder(_folderFilter!, sampleFiles);
+      list = list.where((f) => ids.contains(f.id)).toList();
     }
 
     switch (_sort) {
@@ -92,10 +84,16 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   int _countFor(String category) {
     if (category == 'Favorites') {
-      return sampleFiles.where((f) => AppState.isFavorite(f.id)).length;
+      return sampleFiles
+          .where((f) => !AppState.isDeleted(f.id) && AppState.isFavorite(f.id))
+          .length;
     }
     return sampleFiles
-        .where((f) => kFileTypeCategory[f.type] == category)
+        .where(
+          (f) =>
+              !AppState.isDeleted(f.id) &&
+              kFileTypeCategory[f.type] == category,
+        )
         .length;
   }
 
@@ -140,9 +138,92 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       ),
     );
     if (name == null || name.isEmpty) return;
-    setState(() {
-      AppState.addFolder(name);
-    });
+    setState(() => AppState.addFolder(name));
+  }
+
+  Future<void> _folderActions(FolderItem folder) async {
+    final theme = Theme.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: Text(
+                folder.name,
+                style: theme.textTheme.headlineSmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.add_circle_outline,
+                color: theme.colorScheme.secondary,
+              ),
+              title: const Text('Add or remove files'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                showFileMultiPicker(
+                  context,
+                  folder.name,
+                  onChanged: () => setState(() {}),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: theme.colorScheme.error,
+              ),
+              title: Text(
+                'Delete folder',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('Delete folder?'),
+                    content: Text(
+                      '"${folder.name}" will be hidden. Files inside are not deleted.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.error,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                  setState(() {
+                    AppState.deleteFolder(folder.name);
+                    if (_folderFilter == folder.name) _folderFilter = null;
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -260,7 +341,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (_folderFilter != null && AppState.isCustomFolder(_folderFilter!))
+          if (_folderFilter != null)
             IconButton(
               icon: const Icon(Icons.add_circle_outline),
               color: theme.colorScheme.secondary,
@@ -525,8 +606,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         for (var i = 0; i < _allFolders.length; i++) ...[
           FolderListItem(
             folder: _allFolders[i],
-            itemCount: AppState.itemCountFor(_allFolders[i]),
+            itemCount: AppState.filesInFolder(
+              _allFolders[i].name,
+              sampleFiles,
+            ).length,
             onTap: () => _openFolder(_allFolders[i].name),
+            onLongPress: () => _folderActions(_allFolders[i]),
           ),
           if (i < _allFolders.length - 1)
             Divider(
