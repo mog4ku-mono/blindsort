@@ -5,7 +5,9 @@ import '../constants/category_colors.dart';
 import '../constants/file_type_colors.dart';
 import '../data/sample_files.dart';
 import '../data/sample_folders.dart';
+import '../models/file_item.dart';
 import '../models/folder_item.dart';
+import '../state/app_state.dart';
 import '../widgets/category_navigation_item.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/folder_list_item.dart';
@@ -13,10 +15,9 @@ import '../widgets/folder_list_item.dart';
 enum SortMode { recent, name, size }
 
 /// File Browser. Categories tab shows tiles, folders, and files; Folders tab
-/// shows only folders. Tapping a folder narrows the file list to that
-/// folder; long-pressing a file toggles its favorite state.
+/// shows only folders. Tapping a folder narrows the file list; long-pressing
+/// a file opens actions including Add to folder.
 class FileBrowserScreen extends StatefulWidget {
-  /// Optional category pre-filter, e.g. when Home taps the Documents tile.
   final String? initialCategory;
 
   const FileBrowserScreen({super.key, this.initialCategory});
@@ -32,29 +33,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   String? _selectedFileId;
   SortMode _sort = SortMode.recent;
 
-  /// Favorites toggled during this session. Persistence is a Week 3 task.
-  final Set<String> _favoriteIds = {};
-
-  /// Folders created during this session. Persistence is a Week 3 task.
-  final List<FolderItem> _customFolders = [];
-
   @override
   void initState() {
     super.initState();
     _categoryFilter = widget.initialCategory;
   }
 
-  List<FolderItem> get _allFolders => [...sampleFolders, ..._customFolders];
-
-  bool _isFavorite(String id) =>
-      _favoriteIds.contains(id) ||
-      sampleFiles.firstWhere((f) => f.id == id).isFavorite;
+  List<FolderItem> get _allFolders => [
+    ...sampleFolders,
+    ...AppState.customFolders,
+  ];
 
   List get _visibleFiles {
     var list = sampleFiles;
 
     if (_categoryFilter == 'Favorites') {
-      list = list.where((f) => _isFavorite(f.id)).toList();
+      list = list.where((f) => AppState.isFavorite(f.id)).toList();
     } else if (_categoryFilter == 'Downloads') {
       list = list.where((f) => f.location.contains('Download')).toList();
     } else if (_categoryFilter != null) {
@@ -64,7 +58,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     }
 
     if (_folderFilter != null) {
-      list = list.where((f) => f.location.contains(_folderFilter!)).toList();
+      if (AppState.isCustomFolder(_folderFilter!)) {
+        final ids = AppState.folderContents[_folderFilter] ?? {};
+        list = list.where((f) => ids.contains(f.id)).toList();
+      } else {
+        list = list.where((f) => f.location.contains(_folderFilter!)).toList();
+      }
     }
 
     switch (_sort) {
@@ -91,7 +90,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   int _countFor(String category) {
     if (category == 'Favorites') {
-      return sampleFiles.where((f) => _isFavorite(f.id)).length;
+      return sampleFiles.where((f) => AppState.isFavorite(f.id)).length;
     }
     return sampleFiles
         .where((f) => kFileTypeCategory[f.type] == category)
@@ -105,16 +104,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     return 'Internal Storage  ›  Documents';
   }
 
-  void _toggleFavorite(String id) {
-    setState(() {
-      if (_favoriteIds.contains(id)) {
-        _favoriteIds.remove(id);
-      } else {
-        _favoriteIds.add(id);
-      }
-    });
-  }
-
   void _openFolder(String name) {
     setState(() {
       _folderFilter = _folderFilter == name ? null : name;
@@ -122,7 +111,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     });
   }
 
-  Future<void> _createFolder(ThemeData theme) async {
+  Future<void> _createFolder() async {
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
@@ -150,15 +139,114 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     );
     if (name == null || name.isEmpty) return;
     setState(() {
-      _customFolders.add(
-        FolderItem(
-          id: 'custom-${DateTime.now().millisecondsSinceEpoch}',
-          name: name,
-          itemCount: 0,
-          modifiedAt: DateTime.now(),
-        ),
-      );
+      AppState.addFolder(name);
     });
+  }
+
+  Future<void> _showFileActions(FileItem file) async {
+    final theme = Theme.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  file.name,
+                  style: theme.textTheme.headlineSmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                AppState.isFavorite(file.id) ? Icons.star : Icons.star_border,
+                color: theme.colorScheme.secondary,
+              ),
+              title: Text(
+                AppState.isFavorite(file.id)
+                    ? 'Remove from Favorites'
+                    : 'Add to Favorites',
+              ),
+              onTap: () {
+                setState(() => AppState.toggleFavorite(file.id));
+                Navigator.pop(sheetContext);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.create_new_folder_outlined,
+                color: theme.colorScheme.secondary,
+              ),
+              title: const Text('Add to folder...'),
+              enabled: AppState.customFolders.isNotEmpty,
+              subtitle: AppState.customFolders.isEmpty
+                  ? const Text('Create a folder first from the Folders tab')
+                  : null,
+              onTap: AppState.customFolders.isEmpty
+                  ? null
+                  : () {
+                      Navigator.pop(sheetContext);
+                      _pickFolderFor(file);
+                    },
+            ),
+          ],
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _pickFolderFor(FileItem file) async {
+    final theme = Theme.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Add to which folder?',
+                  style: theme.textTheme.headlineSmall,
+                ),
+              ),
+            ),
+            for (final folder in AppState.customFolders)
+              ListTile(
+                leading: Icon(Icons.folder, color: theme.colorScheme.secondary),
+                title: Text(folder.name),
+                onTap: () {
+                  setState(() {
+                    AppState.addFileToFolder(folder.name, file.id);
+                  });
+                  Navigator.pop(sheetContext);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   @override
@@ -243,7 +331,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
           const Spacer(),
           FilledButton.tonalIcon(
-            onPressed: () => _createFolder(theme),
+            onPressed: _createFolder,
             icon: const Icon(Icons.create_new_folder_outlined, size: 18),
             label: const Text('New folder'),
           ),
@@ -528,6 +616,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         for (var i = 0; i < _allFolders.length; i++) ...[
           FolderListItem(
             folder: _allFolders[i],
+            itemCount: AppState.itemCountFor(_allFolders[i]),
             onTap: () => _openFolder(_allFolders[i].name),
           ),
           if (i < _allFolders.length - 1)
@@ -573,14 +662,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           for (var i = 0; i < files.length; i++) ...[
             FileListItem(
               file: files[i],
-              isFavorite: _isFavorite(files[i].id),
+              isFavorite: AppState.isFavorite(files[i].id),
               isSelected: _selectedFileId == files[i].id,
               onTap: () => setState(() {
                 _selectedFileId = _selectedFileId == files[i].id
                     ? null
                     : files[i].id;
               }),
-              onLongPress: () => _toggleFavorite(files[i].id),
+              onLongPress: () => _showFileActions(files[i]),
             ),
             if (i < files.length - 1)
               Divider(
