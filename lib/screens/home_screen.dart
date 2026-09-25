@@ -11,7 +11,6 @@ import '../widgets/file_list_item.dart';
 import '../widgets/section_card.dart';
 import 'file_browser_screen.dart';
 
-/// Home Dashboard. Entry point of the four-screen journey.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -20,7 +19,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<FileItem> _allFiles = sampleFiles;
   String? _selectedFileId;
   bool _entered = false;
 
@@ -32,10 +30,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<FileItem> get _recent => _allFiles.take(3).toList();
+  List<FileItem> get _active =>
+      sampleFiles.where((f) => !AppState.isDeleted(f.id)).toList();
+
+  List<FileItem> get _recent => _active.take(3).toList();
 
   List<FileItem> get _favorites =>
-      _allFiles.where((f) => AppState.isFavorite(f.id)).toList();
+      _active.where((f) => AppState.isFavorite(f.id)).toList();
 
   void _openBrowser({String? category}) {
     Navigator.push(
@@ -50,9 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _countFor(String category) {
     if (category == 'Favorites') {
-      return _allFiles.where((f) => AppState.isFavorite(f.id)).length;
+      return _active.where((f) => AppState.isFavorite(f.id)).length;
     }
-    return _allFiles
+    return _active
         .where((f) => f.type.contains(category.substring(0, 3)))
         .length;
   }
