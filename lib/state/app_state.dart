@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../models/file_item.dart';
 import '../models/folder_item.dart';
 
@@ -11,6 +13,22 @@ class AppState {
   static final Map<String, Set<String>> folderContents = {};
   static final Set<String> deletedFileIds = {};
   static final Set<String> deletedFolderNames = {};
+
+  /// Theme mode. Listenable so MaterialApp rebuilds when it changes.
+  static final ValueNotifier<ThemeMode> themeMode = ValueNotifier(
+    ThemeMode.light,
+  );
+
+  // Settings toggles.
+  static bool screenReaderHints = true;
+  static bool focusIndicators = true;
+  static bool voiceInput = true;
+  static bool readAloud = true;
+  static bool audioFeedback = true;
+  static bool hapticFeedback = true;
+  static bool hapticOnActions = true;
+  static bool autoBackup = false;
+  static String language = 'English';
 
   static void init(List<FileItem> files) {
     if (favoriteIds.isEmpty) {
@@ -62,12 +80,26 @@ class AppState {
     folderContents.putIfAbsent(folderName, () => {}).add(fileId);
   }
 
-  /// Files in a folder, merging location-derived and contents-derived sets.
   static Set<String> filesInFolder(String folderName, List<FileItem> allFiles) {
     final fromLocation = allFiles
         .where((f) => f.location.contains(folderName))
         .map((f) => f.id);
     final fromContents = folderContents[folderName] ?? const <String>{};
     return {...fromLocation, ...fromContents};
+  }
+
+  /// Resets user-tunable settings back to defaults. Files, folders, and
+  /// favorites are left alone; only the Settings screen values reset.
+  static void resetSettings() {
+    screenReaderHints = true;
+    focusIndicators = true;
+    voiceInput = true;
+    readAloud = true;
+    audioFeedback = true;
+    hapticFeedback = true;
+    hapticOnActions = true;
+    autoBackup = false;
+    language = 'English';
+    themeMode.value = ThemeMode.light;
   }
 }
