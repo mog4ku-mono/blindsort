@@ -303,14 +303,54 @@ class AppDrawer extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('About BlindSort'),
-        content: Text(
-          'BlindSort is an accessibility-first file manager for blind and '
-          'low-vision users. It speaks file names, types, and metadata so '
-          'you can find what you need without reading a screen.\n\n'
-          'Long-press a file to favorite, add to a folder, or delete. Tap a '
-          'file to see details and an AI summary.\n\n'
-          'Developer: alfred [@mog4ku-mono]',
-          style: theme.textTheme.bodyMedium,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodyMedium,
+                children: [
+                  TextSpan(
+                    text: 'BlindSort',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const TextSpan(
+                    text:
+                        ' is an accessibility-first file manager for blind '
+                        'and low-vision users. It speaks file names, types, '
+                        'and metadata so you can find what you need without '
+                        'reading a screen.',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Long-press a file to favorite, add to a folder, or delete. '
+              'Tap a file to see details and an AI summary.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodyMedium,
+                children: [
+                  const TextSpan(text: 'Developer: '),
+                  TextSpan(
+                    text: 'alfred [@mog4ku-mono]',
+                    style: TextStyle(
+                      color: theme.colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
