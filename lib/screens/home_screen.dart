@@ -9,8 +9,9 @@ import '../widgets/category_navigation_item.dart';
 import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/section_card.dart';
-import 'file_browser_screen.dart';
 import '../widgets/voice_search_overlay.dart';
+import 'file_browser_screen.dart';
+import 'file_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +21,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _selectedFileId;
   bool _entered = false;
 
   @override
@@ -54,6 +54,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final proceeded = await showVoiceSearchOverlay(context);
     if (!mounted || !proceeded) return;
     _openBrowser();
+  }
+
+  void _openDetails(FileItem file) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => FileDetailsScreen(file: file)),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   int _countFor(String category) {
@@ -192,12 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
           FileListItem(
             file: _recent[i],
             isFavorite: AppState.isFavorite(_recent[i].id),
-            isSelected: _selectedFileId == _recent[i].id,
-            onTap: () => setState(() {
-              _selectedFileId = _selectedFileId == _recent[i].id
-                  ? null
-                  : _recent[i].id;
-            }),
+            onTap: () => _openDetails(_recent[i]),
             onLongPress: () => showFileActions(
               context,
               _recent[i],
@@ -234,12 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 FileListItem(
                   file: _favorites[i],
                   isFavorite: true,
-                  isSelected: _selectedFileId == _favorites[i].id,
-                  onTap: () => setState(() {
-                    _selectedFileId = _selectedFileId == _favorites[i].id
-                        ? null
-                        : _favorites[i].id;
-                  }),
+                  onTap: () => _openDetails(_favorites[i]),
                   onLongPress: () => showFileActions(
                     context,
                     _favorites[i],
