@@ -507,28 +507,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          final currentTheme = Theme.of(context);
-          final children = childrenBuilder(() => setSheetState(() {}));
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: currentTheme.textTheme.headlineSmall),
-                const SizedBox(height: AppSpacing.sm),
-                for (final child in children) child,
-              ],
-            ),
-          );
-        },
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (_) => ValueListenableBuilder<ThemeMode>(
+        valueListenable: AppState.themeMode,
+        builder: (context, _, __) => StatefulBuilder(
+          builder: (context, setSheetState) {
+            final currentTheme = Theme.of(context);
+            final children = childrenBuilder(() => setSheetState(() {}));
+            return Container(
+              color: currentTheme.colorScheme.surface,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: currentTheme.textTheme.headlineSmall),
+                  const SizedBox(height: AppSpacing.sm),
+                  for (final child in children) child,
+                ],
+              ),
+            );
+          },
+        ),
       ),
     ).then((_) {
       if (mounted) setState(() {});
