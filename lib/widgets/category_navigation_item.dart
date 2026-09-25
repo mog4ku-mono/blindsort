@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
 
-/// A single category tile on the Home Dashboard and the File Browser. The
-/// item count is optional: when the parent has no count yet, only the icon
-/// and label are shown. Colour is never the only signal — the icon and the
-/// label carry the meaning, the tile just reinforces it.
+/// A category tile on Home and the File Browser. Outlined so the icon and
+/// label carry the meaning, not the fill colour. The item count is optional.
 class CategoryNavigationItem extends StatelessWidget {
   final String categoryName;
   final IconData icon;
@@ -30,21 +28,29 @@ class CategoryNavigationItem extends StatelessWidget {
           : '$categoryName, $itemCount items',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 40,
+                height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  color: theme.colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: theme.colorScheme.primary),
+                child: Icon(icon, color: theme.colorScheme.secondary, size: 22),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
