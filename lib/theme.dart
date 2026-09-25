@@ -7,16 +7,17 @@ import 'constants/app_spacing.dart';
 /// per screen.
 const Color kSeedColor = Color(0xFF1565C0);
 
-/// Teal from the design system mockup. Used as the secondary role so the
-/// Voice Search hero, section header icons, and category tiles read the way
-/// the high-fidelity mockup does.
+/// Teal used by the hero card, tabs, and section labels.
 const Color kSecondaryTeal = Color(0xFF26A69A);
 
-/// Tint behind secondary icons (settings rows, category tiles, folder rows).
-/// Light enough that the teal icon stays legible without a dark ring.
+/// Darker teal used for folder icons so a folder reads differently from a
+/// category tile at a glance.
+const Color kFolderTeal = Color(0xFF00897B);
+
+/// Light tint behind teal icons when a filled circle is not appropriate.
 const Color kSecondaryContainer = Color(0xFFE0F2F1);
 
-/// Dark teal for icons/text that sit on the container tint.
+/// Dark teal used for icons and text that sit on the light tint.
 const Color kOnSecondaryContainer = Color(0xFF00695C);
 
 /// The application theme. Light mode only for the capstone.
