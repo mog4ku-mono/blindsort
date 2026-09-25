@@ -29,6 +29,10 @@ class AppState {
   static bool hapticOnActions = true;
   static bool autoBackup = false;
   static String language = 'English';
+  static String speechRate = 'Medium';
+  static String textSize = 'Medium';
+  static bool highContrast = false;
+  static String vibrationIntensity = 'Medium';
 
   static void init(List<FileItem> files) {
     if (favoriteIds.isEmpty) {
@@ -106,6 +110,10 @@ class AppState {
     hapticOnActions = true;
     autoBackup = false;
     language = 'English';
+    speechRate = 'Medium';
+    textSize = 'Medium';
+    highContrast = false;
+    vibrationIntensity = 'Medium';
     themeMode.value = ThemeMode.light;
   }
 }
