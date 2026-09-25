@@ -4,17 +4,19 @@ import '../models/folder_item.dart';
 import '../theme.dart';
 
 /// A folder row in the File Browser. Dark teal fill so a folder reads
-/// differently from a category tile.
+/// differently from a category tile. Long-press triggers folder actions.
 class FolderListItem extends StatelessWidget {
   final FolderItem folder;
   final int? itemCount;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const FolderListItem({
     super.key,
     required this.folder,
     required this.onTap,
     this.itemCount,
+    this.onLongPress,
   });
 
   @override
@@ -33,6 +35,7 @@ class FolderListItem extends StatelessWidget {
       label: '${folder.name}, folder, $count items, $rel',
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: ListTile(
           leading: Container(
             width: 40,
