@@ -5,18 +5,20 @@ import '../constants/category_colors.dart';
 import '../constants/file_type_colors.dart';
 import '../data/sample_files.dart';
 import '../data/sample_folders.dart';
-import '../models/file_item.dart';
 import '../models/folder_item.dart';
 import '../state/app_state.dart';
 import '../widgets/category_navigation_item.dart';
+import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
+import '../widgets/file_multi_picker.dart';
 import '../widgets/folder_list_item.dart';
 
 enum SortMode { recent, name, size }
 
 /// File Browser. Categories tab shows tiles, folders, and files; Folders tab
 /// shows only folders. Tapping a folder narrows the file list; long-pressing
-/// a file opens actions including Add to folder.
+/// a file opens the shared actions sheet; a custom folder view carries a
+/// + button for adding or removing its files.
 class FileBrowserScreen extends StatefulWidget {
   final String? initialCategory;
 
@@ -143,112 +145,6 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     });
   }
 
-  Future<void> _showFileActions(FileItem file) async {
-    final theme = Theme.of(context);
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  file.name,
-                  style: theme.textTheme.headlineSmall,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: Icon(
-                AppState.isFavorite(file.id) ? Icons.star : Icons.star_border,
-                color: theme.colorScheme.secondary,
-              ),
-              title: Text(
-                AppState.isFavorite(file.id)
-                    ? 'Remove from Favorites'
-                    : 'Add to Favorites',
-              ),
-              onTap: () {
-                setState(() => AppState.toggleFavorite(file.id));
-                Navigator.pop(sheetContext);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.create_new_folder_outlined,
-                color: theme.colorScheme.secondary,
-              ),
-              title: const Text('Add to folder...'),
-              enabled: AppState.customFolders.isNotEmpty,
-              subtitle: AppState.customFolders.isEmpty
-                  ? const Text('Create a folder first from the Folders tab')
-                  : null,
-              onTap: AppState.customFolders.isEmpty
-                  ? null
-                  : () {
-                      Navigator.pop(sheetContext);
-                      _pickFolderFor(file);
-                    },
-            ),
-          ],
-        ),
-      ),
-    );
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _pickFolderFor(FileItem file) async {
-    final theme = Theme.of(context);
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Add to which folder?',
-                  style: theme.textTheme.headlineSmall,
-                ),
-              ),
-            ),
-            for (final folder in AppState.customFolders)
-              ListTile(
-                leading: Icon(Icons.folder, color: theme.colorScheme.secondary),
-                title: Text(folder.name),
-                onTap: () {
-                  setState(() {
-                    AppState.addFileToFolder(folder.name, file.id);
-                  });
-                  Navigator.pop(sheetContext);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -353,15 +249,28 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       ],
       Row(
         children: [
-          Text(
-            _folderFilter == null
-                ? 'Files & Folders'
-                : 'Files in $_folderFilter',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: theme.colorScheme.secondary,
+          Expanded(
+            child: Text(
+              _folderFilter == null
+                  ? 'Files & Folders'
+                  : 'Files in $_folderFilter',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: theme.colorScheme.secondary,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Spacer(),
+          if (_folderFilter != null && AppState.isCustomFolder(_folderFilter!))
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              color: theme.colorScheme.secondary,
+              tooltip: 'Add or remove files',
+              onPressed: () => showFileMultiPicker(
+                context,
+                _folderFilter!,
+                onChanged: () => setState(() {}),
+              ),
+            ),
           PopupMenuButton<SortMode>(
             initialValue: _sort,
             onSelected: (v) => setState(() => _sort = v),
@@ -669,7 +578,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                     ? null
                     : files[i].id;
               }),
-              onLongPress: () => _showFileActions(files[i]),
+              onLongPress: () => showFileActions(
+                context,
+                files[i],
+                onChanged: () => setState(() {}),
+              ),
             ),
             if (i < files.length - 1)
               Divider(
