@@ -103,6 +103,7 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
 
   Widget _heroCard(ThemeData theme) {
     final badgeColor = kFileTypeColors[file.type] ?? kDefaultTypeColor;
+    final isFav = AppState.isFavorite(file.id);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -149,25 +150,38 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
                   style: theme.textTheme.labelSmall,
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: [
-                    Icon(
-                      AppState.isFavorite(file.id)
-                          ? Icons.star
-                          : Icons.star_border,
-                      size: 16,
-                      color: theme.colorScheme.secondary,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      AppState.isFavorite(file.id)
-                          ? 'Favorite'
-                          : 'Add to favorites',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
+                Semantics(
+                  button: true,
+                  label: isFav ? 'Remove from favorites' : 'Add to favorites',
+                  child: InkWell(
+                    onTap: () => setState(() {
+                      AppState.toggleFavorite(file.id);
+                    }),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 2,
+                        horizontal: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isFav ? Icons.star : Icons.star_border,
+                            size: 16,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            isFav ? 'Favorite' : 'Add to favorites',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -299,6 +313,32 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            const Spacer(),
+            if (pages.length > 1) ...[
+              _previewArrow(
+                theme,
+                Icons.chevron_left,
+                'Previous page',
+                _previewPage > 0
+                    ? () => _pageController.previousPage(
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOut,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              _previewArrow(
+                theme,
+                Icons.chevron_right,
+                'Next page',
+                _previewPage < pages.length - 1
+                    ? () => _pageController.nextPage(
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOut,
+                      )
+                    : null,
+              ),
+            ],
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -313,51 +353,13 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
           clipBehavior: Clip.antiAlias,
           child: SizedBox(
             height: 220,
-            child: Stack(
-              children: [
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: pages.length,
-                  physics: const PageScrollPhysics(),
-                  pageSnapping: true,
-                  onPageChanged: (i) => setState(() => _previewPage = i),
-                  itemBuilder: (_, i) => _previewPageContent(theme, pages[i]),
-                ),
-                if (_previewPage > 0)
-                  Positioned(
-                    left: 4,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: _previewArrow(
-                        theme,
-                        Icons.chevron_left,
-                        'Previous page',
-                        () => _pageController.previousPage(
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOut,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (_previewPage < pages.length - 1)
-                  Positioned(
-                    right: 4,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: _previewArrow(
-                        theme,
-                        Icons.chevron_right,
-                        'Next page',
-                        () => _pageController.nextPage(
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOut,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: pages.length,
+              physics: const PageScrollPhysics(),
+              pageSnapping: true,
+              onPageChanged: (i) => setState(() => _previewPage = i),
+              itemBuilder: (_, i) => _previewPageContent(theme, pages[i]),
             ),
           ),
         ),
@@ -399,20 +401,28 @@ class _FileDetailsScreenState extends State<FileDetailsScreen> {
     ThemeData theme,
     IconData icon,
     String tooltip,
-    VoidCallback onTap,
+    VoidCallback? onTap,
   ) {
+    final enabled = onTap != null;
     return Semantics(
       button: true,
+      enabled: enabled,
       label: tooltip,
       child: Material(
-        color: theme.colorScheme.surface.withValues(alpha: 0.85),
+        color: theme.colorScheme.surfaceContainerHighest,
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            child: Icon(icon, size: 22, color: theme.colorScheme.secondary),
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              icon,
+              size: 22,
+              color: enabled
+                  ? theme.colorScheme.secondary
+                  : theme.colorScheme.outlineVariant,
+            ),
           ),
         ),
       ),
