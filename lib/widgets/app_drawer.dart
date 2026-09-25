@@ -301,7 +301,7 @@ class AppDrawer extends StatelessWidget {
     final theme = Theme.of(context);
     showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('About BlindSort'),
         content: Text(
           'BlindSort is an accessibility-first file manager for blind and '
@@ -314,7 +314,7 @@ class AppDrawer extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Got it'),
           ),
         ],
