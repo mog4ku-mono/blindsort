@@ -7,8 +7,11 @@ import '../models/file_item.dart';
 import '../widgets/category_navigation_item.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/section_card.dart';
+import 'file_browser_screen.dart';
 
-/// Home Dashboard. Entry point of the four-screen journey.
+/// Home Dashboard. Entry point of the four-screen journey. Category tiles,
+/// View all links, and Browse All Files route to the File Browser; the gear
+/// opens Settings; long-pressing a file toggles its favorite state.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -18,11 +21,54 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<FileItem> _allFiles = sampleFiles;
+  final Set<String> _favoriteIds = {};
+  String? _selectedFileId;
+  bool _entered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _entered = true);
+    });
+  }
 
   List<FileItem> get _recent => _allFiles.take(3).toList();
 
   List<FileItem> get _favorites =>
-      _allFiles.where((f) => f.isFavorite).toList();
+      _allFiles.where((f) => _isFavorite(f.id)).toList();
+
+  bool _isFavorite(String id) =>
+      _favoriteIds.contains(id) ||
+      _allFiles.firstWhere((f) => f.id == id).isFavorite;
+
+  void _toggleFavorite(String id) {
+    setState(() {
+      if (_favoriteIds.contains(id)) {
+        _favoriteIds.remove(id);
+      } else {
+        _favoriteIds.add(id);
+      }
+    });
+  }
+
+  void _openBrowser({String? category}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FileBrowserScreen(initialCategory: category),
+      ),
+    );
+  }
+
+  int _countFor(String category) {
+    if (category == 'Favorites') {
+      return _allFiles.where((f) => _isFavorite(f.id)).length;
+    }
+    return _allFiles
+        .where((f) => f.type.contains(category.substring(0, 3)))
+        .length;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,37 +124,62 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          Text(
-            'Your command center. Continue your work.',
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.secondaryContainer.withValues(alpha: 0.22),
+              theme.colorScheme.surface,
+            ],
+            stops: const [0.0, 0.3],
           ),
-          const SizedBox(height: AppSpacing.md),
-          const _VoiceSearchCard(),
-          const SizedBox(height: AppSpacing.md),
-          _recentSection(),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Showing up to 3 recent files',
-            style: theme.textTheme.labelSmall,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _favoritesSection(),
-          const SizedBox(height: AppSpacing.sm),
-          _categoriesSection(),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Tap a category to browse filtered files.',
-            style: theme.textTheme.labelSmall,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _browseAllCard(),
-          const SizedBox(height: AppSpacing.sm),
-          _tipCard(),
-        ],
+        ),
+        child: Column(
+          children: [
+            const Divider(height: 1),
+            Expanded(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+                opacity: _entered ? 1.0 : 0.0,
+                child: ListView(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  children: [
+                    Text(
+                      'Your command center. Continue your work.',
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _VoiceSearchCard(onTap: () => _openBrowser()),
+                    const SizedBox(height: AppSpacing.md),
+                    _recentSection(),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Showing up to 3 recent files',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _favoritesSection(),
+                    const SizedBox(height: AppSpacing.sm),
+                    _categoriesSection(),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Tap a category to browse filtered files.',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _browseAllCard(),
+                    const SizedBox(height: AppSpacing.sm),
+                    _tipCard(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -116,16 +187,43 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _recentSection() => SectionCard(
     title: 'Recent Files',
     leadingIcon: Icons.schedule,
-    trailing: TextButton(onPressed: () {}, child: const Text('View all')),
+    trailing: TextButton(
+      onPressed: () => _openBrowser(),
+      child: const Text('View all'),
+    ),
     child: Column(
-      children: [for (final f in _recent) FileListItem(file: f, onTap: () {})],
+      children: [
+        for (var i = 0; i < _recent.length; i++) ...[
+          FileListItem(
+            file: _recent[i],
+            isFavorite: _isFavorite(_recent[i].id),
+            isSelected: _selectedFileId == _recent[i].id,
+            onTap: () => setState(() {
+              _selectedFileId = _selectedFileId == _recent[i].id
+                  ? null
+                  : _recent[i].id;
+            }),
+            onLongPress: () => _toggleFavorite(_recent[i].id),
+          ),
+          if (i < _recent.length - 1)
+            Divider(
+              height: 1,
+              indent: AppSpacing.md,
+              endIndent: AppSpacing.md,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+        ],
+      ],
     ),
   );
 
   Widget _favoritesSection() => SectionCard(
     title: 'Favorites',
     leadingIcon: Icons.star_border,
-    trailing: TextButton(onPressed: () {}, child: const Text('View all')),
+    trailing: TextButton(
+      onPressed: () => _openBrowser(category: 'Favorites'),
+      child: const Text('View all'),
+    ),
     child: _favorites.isEmpty
         ? const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -133,7 +231,26 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         : Column(
             children: [
-              for (final f in _favorites) FileListItem(file: f, onTap: () {}),
+              for (var i = 0; i < _favorites.length; i++) ...[
+                FileListItem(
+                  file: _favorites[i],
+                  isFavorite: true,
+                  isSelected: _selectedFileId == _favorites[i].id,
+                  onTap: () => setState(() {
+                    _selectedFileId = _selectedFileId == _favorites[i].id
+                        ? null
+                        : _favorites[i].id;
+                  }),
+                  onLongPress: () => _toggleFavorite(_favorites[i].id),
+                ),
+                if (i < _favorites.length - 1)
+                  Divider(
+                    height: 1,
+                    indent: AppSpacing.md,
+                    endIndent: AppSpacing.md,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+              ],
             ],
           ),
   );
@@ -142,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
     title: 'Categories',
     leadingIcon: Icons.folder_outlined,
     trailing: TextButton(
-      onPressed: () {},
+      onPressed: () => _openBrowser(),
       child: const Text('More categories →'),
     ),
     child: Row(
@@ -153,32 +270,32 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.description_outlined,
           tintColor: kDocumentsColors.tint,
           foregroundColor: kDocumentsColors.foreground,
-          itemCount: 126,
-          onTap: _noop,
+          itemCount: _countFor('Documents'),
+          onTap: () => _openBrowser(category: 'Documents'),
         ),
         CategoryNavigationItem(
           categoryName: 'Images',
           icon: Icons.image_outlined,
           tintColor: kImagesColors.tint,
           foregroundColor: kImagesColors.foreground,
-          itemCount: 84,
-          onTap: _noop,
+          itemCount: _countFor('Images'),
+          onTap: () => _openBrowser(category: 'Images'),
         ),
         CategoryNavigationItem(
           categoryName: 'Videos',
           icon: Icons.video_library_outlined,
           tintColor: kVideosColors.tint,
           foregroundColor: kVideosColors.foreground,
-          itemCount: 52,
-          onTap: _noop,
+          itemCount: _countFor('Videos'),
+          onTap: () => _openBrowser(category: 'Videos'),
         ),
         CategoryNavigationItem(
           categoryName: 'Audio',
           icon: Icons.music_note_outlined,
           tintColor: kAudioColors.tint,
           foregroundColor: kAudioColors.foreground,
-          itemCount: 98,
-          onTap: _noop,
+          itemCount: _countFor('Audio'),
+          onTap: () => _openBrowser(category: 'Audio'),
         ),
       ],
     ),
@@ -191,29 +308,39 @@ class _HomeScreenState extends State<HomeScreen> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        leading: Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: Icon(Icons.folder, color: theme.colorScheme.secondary),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _openBrowser(),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          leading: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.folder, color: theme.colorScheme.secondary),
+          ),
+          title: Text('Browse All Files', style: theme.textTheme.bodyMedium),
+          subtitle: Text(
+            'View all files in your device',
+            style: theme.textTheme.labelSmall,
+          ),
+          trailing: const Icon(Icons.chevron_right),
         ),
-        title: Text('Browse All Files', style: theme.textTheme.bodyMedium),
-        subtitle: Text(
-          'View all files in your device',
-          style: theme.textTheme.labelSmall,
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {},
       ),
     );
   }
@@ -258,10 +385,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Voice Search hero card. Speech is not wired yet; the search flow lands on
-/// the File Browser once that screen exists.
+/// Voice Search hero card. Tapping it opens the File Browser; speech wiring
+/// lands in a later branch.
 class _VoiceSearchCard extends StatelessWidget {
-  const _VoiceSearchCard();
+  final VoidCallback onTap;
+
+  const _VoiceSearchCard({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -270,13 +399,20 @@ class _VoiceSearchCard extends StatelessWidget {
       button: true,
       label: 'Voice Search. Tap to speak and find files.',
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           decoration: BoxDecoration(
             color: theme.colorScheme.secondary,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -314,5 +450,3 @@ class _VoiceSearchCard extends StatelessWidget {
     );
   }
 }
-
-void _noop() {}
