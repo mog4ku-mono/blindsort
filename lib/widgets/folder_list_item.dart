@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_spacing.dart';
 import '../models/folder_item.dart';
 import '../theme.dart';
 
 /// A folder row in the File Browser. Dark teal fill so a folder reads
-/// differently from a category tile, which uses a lighter background.
+/// differently from a category tile.
 class FolderListItem extends StatelessWidget {
   final FolderItem folder;
   final VoidCallback onTap;
@@ -25,24 +24,26 @@ class FolderListItem extends StatelessWidget {
     return Semantics(
       button: true,
       label: '${folder.name}, folder, ${folder.itemCount} items, $rel',
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: kFolderTeal,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const Icon(Icons.folder, color: Colors.white, size: 22),
-        ),
-        title: Text(folder.name, style: theme.textTheme.bodyMedium),
-        subtitle: Text(
-          'Folder · ${folder.itemCount} items · $rel',
-          style: theme.textTheme.labelSmall,
-        ),
-        trailing: const Icon(Icons.chevron_right),
+      child: InkWell(
         onTap: onTap,
+        child: ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: kFolderTeal,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(Icons.folder, color: Colors.white, size: 22),
+          ),
+          title: Text(folder.name, style: theme.textTheme.bodyMedium),
+          subtitle: Text(
+            'Folder · ${folder.itemCount} items · $rel',
+            style: theme.textTheme.labelSmall,
+          ),
+          trailing: const Icon(Icons.chevron_right),
+        ),
       ),
     );
   }
