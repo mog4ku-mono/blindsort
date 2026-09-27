@@ -506,19 +506,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => ValueListenableBuilder<ThemeMode>(
         valueListenable: AppState.themeMode,
         builder: (context, _, _) => StatefulBuilder(
           builder: (context, setSheetState) {
-            final currentTheme = Theme.of(context);
+            final theme = Theme.of(context);
             final children = childrenBuilder(() => setSheetState(() {}));
             return Container(
-              color: currentTheme.colorScheme.surface,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                0,
+                AppSpacing.sm,
                 AppSpacing.lg,
                 AppSpacing.lg,
               ),
@@ -526,7 +531,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: currentTheme.textTheme.headlineSmall),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(title, style: theme.textTheme.headlineSmall),
                   const SizedBox(height: AppSpacing.sm),
                   for (final child in children) child,
                 ],
