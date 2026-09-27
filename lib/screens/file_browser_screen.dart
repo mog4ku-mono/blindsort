@@ -13,6 +13,7 @@ import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
 import '../widgets/file_multi_picker.dart';
 import '../widgets/folder_list_item.dart';
+import '../widgets/voice_search_overlay.dart';
 import 'file_details_screen.dart';
 
 enum SortMode { recent, name, size }
@@ -32,6 +33,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   String? _folderFilter;
   String? _selectedFileId;
   SortMode _sort = SortMode.recent;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -60,6 +62,11 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     if (_folderFilter != null) {
       final ids = AppState.filesInFolder(_folderFilter!, sampleFiles);
       list = list.where((f) => ids.contains(f.id)).toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((f) => f.name.toLowerCase().contains(q)).toList();
     }
 
     switch (_sort) {
@@ -111,6 +118,70 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       _folderFilter = _folderFilter == name ? null : name;
       _tabIndex = 0;
     });
+  }
+
+  void _openSearch() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: TextField(
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Search files by name',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => setState(() => _searchQuery = v),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openVoiceSearch() async {
+    await showVoiceSearchOverlay(context);
+    if (!mounted) return;
+  }
+
+  void _handleMoreMenu(String value) {
+    switch (value) {
+      case 'clear':
+        setState(() {
+          _categoryFilter = null;
+          _folderFilter = null;
+          _searchQuery = '';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Filters cleared'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case 'about':
+        showAboutDialog(
+          context: context,
+          applicationName: 'BlindSort',
+          applicationVersion: '1.0.0',
+          children: const [
+            Text(
+              'An accessibility-first file manager for blind and low-vision '
+              'users.',
+            ),
+          ],
+        );
+    }
   }
 
   Future<void> _createFolder() async {
@@ -254,18 +325,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {},
+            onPressed: _openSearch,
             tooltip: 'Search',
           ),
           IconButton(
             icon: const Icon(Icons.mic_none),
-            onPressed: () {},
+            onPressed: _openVoiceSearch,
             tooltip: 'Voice search',
           ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            onPressed: () {},
             tooltip: 'More',
+            onSelected: _handleMoreMenu,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'clear', child: Text('Clear all filters')),
+              PopupMenuItem(value: 'about', child: Text('About BlindSort')),
+            ],
           ),
         ],
       ),
@@ -336,7 +411,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     children: [
       _categoryRow(),
       const SizedBox(height: AppSpacing.md),
-      if (_categoryFilter != null || _folderFilter != null) ...[
+      if (_categoryFilter != null ||
+          _folderFilter != null ||
+          _searchQuery.isNotEmpty) ...[
         _activeFiltersRow(theme),
         const SizedBox(height: AppSpacing.sm),
       ],
@@ -617,6 +694,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         Chip(
           label: Text('Folder: $_folderFilter'),
           onDeleted: () => setState(() => _folderFilter = null),
+          deleteIcon: const Icon(Icons.close, size: 16),
+        ),
+      if (_searchQuery.isNotEmpty)
+        Chip(
+          label: Text('Search: $_searchQuery'),
+          onDeleted: () => setState(() => _searchQuery = ''),
           deleteIcon: const Icon(Icons.close, size: 16),
         ),
     ],
