@@ -14,6 +14,7 @@ import 'file_browser_screen.dart';
 import 'file_details_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/app_drawer.dart';
+import '../constants/file_type_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -82,9 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category == 'Favorites') {
       return _active.where((f) => AppState.isFavorite(f.id)).length;
     }
-    return _active
-        .where((f) => f.type.contains(category.substring(0, 3)))
-        .length;
+    return _active.where((f) => kFileTypeCategory[f.type] == category).length;
   }
 
   @override
