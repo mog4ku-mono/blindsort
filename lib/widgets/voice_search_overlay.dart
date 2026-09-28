@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
+import '../services/voice_service.dart';
+import '../utils/voice_command_parser.dart';
 
-/// Shows the voice search listening overlay. Speech recognition is not wired
-/// yet; the overlay shows an animated listening state and returns true when
-/// the user lets it run, false when they cancel. Callers use the result to
-/// decide whether to proceed to a search.
-Future<bool> showVoiceSearchOverlay(BuildContext context) async {
-  final result = await showGeneralDialog<bool>(
+/// Shows the voice search overlay. Returns the intent the user spoke, or
+/// null if they cancelled or speech was not recognised.
+Future<VoiceIntent?> showVoiceSearchOverlay(BuildContext context) async {
+  final result = await showGeneralDialog<VoiceIntent>(
     context: context,
     barrierDismissible: false,
     barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -26,7 +26,7 @@ Future<bool> showVoiceSearchOverlay(BuildContext context) async {
     },
     pageBuilder: (_, _, _) => const _VoiceSearchScreen(),
   );
-  return result ?? false;
+  return result;
 }
 
 class _VoiceSearchScreen extends StatefulWidget {
@@ -42,15 +42,17 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
     'Listening...',
     'Speak your command',
     "I'm listening...",
-    'Try saying: find my notes',
-    'Say: open File Browser',
+    'Try saying: open settings',
+    'Say: open file browser',
   ];
 
+  final VoiceService _voice = VoiceService();
   late final AnimationController _pulse;
   late final Animation<double> _pulseAnim;
   Timer? _statusTimer;
   Timer? _autoDismiss;
   int _statusIndex = 0;
+  bool _speechReady = false;
 
   @override
   void initState() {
@@ -67,14 +69,36 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
       if (!mounted) return;
       setState(() => _statusIndex = (_statusIndex + 1) % _statuses.length);
     });
-    _autoDismiss = Timer(const Duration(seconds: 7), () {
+    _autoDismiss = Timer(const Duration(seconds: 12), () {
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop();
     });
+    _startListening();
+  }
+
+  Future<void> _startListening() async {
+    final ok = await _voice.init();
+    if (!mounted) return;
+    if (!ok) {
+      setState(() {
+        _speechReady = false;
+        _statusIndex = 0;
+      });
+      return;
+    }
+    setState(() => _speechReady = true);
+    await _voice.listen(
+      onResult: (text) {
+        if (!mounted) return;
+        final intent = VoiceCommandParser.parse(text);
+        Navigator.of(context).pop(intent);
+      },
+    );
   }
 
   @override
   void dispose() {
+    _voice.stop();
     _pulse.dispose();
     _statusTimer?.cancel();
     _autoDismiss?.cancel();
@@ -104,7 +128,7 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
                   child: IconButton(
                     icon: const Icon(Icons.close, color: Colors.white),
                     tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(false),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
                 const Spacer(),
@@ -141,7 +165,9 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
                   transitionBuilder: (child, anim) =>
                       FadeTransition(opacity: anim, child: child),
                   child: Text(
-                    _statuses[_statusIndex],
+                    _speechReady
+                        ? _statuses[_statusIndex]
+                        : 'Microphone not available',
                     key: ValueKey(_statusIndex),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: Colors.white,
@@ -151,7 +177,7 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: () => Navigator.of(context).pop(false),
+                  onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.cancel, color: Colors.white),
                   label: const Text(
                     'Cancel',

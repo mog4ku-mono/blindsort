@@ -15,6 +15,7 @@ import 'file_details_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/app_drawer.dart';
 import '../constants/file_type_colors.dart';
+import '../utils/voice_command_parser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,9 +56,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startVoiceSearch() async {
-    final proceeded = await showVoiceSearchOverlay(context);
-    if (!mounted || !proceeded) return;
-    _openBrowser();
+    final intent = await showVoiceSearchOverlay(context);
+    if (!mounted || intent == null) return;
+
+    switch (intent) {
+      case VoiceIntent.openBrowser:
+        _openBrowser();
+      case VoiceIntent.openSettings:
+        _openSettings();
+      case VoiceIntent.openHome:
+        // Already on Home. Do nothing.
+        break;
+      case VoiceIntent.search:
+        // Open the browser so the user can type or say a search term.
+        _openBrowser();
+      case VoiceIntent.unknown:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Didn't catch that. Try 'open settings'."),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   void _openDetails(FileItem file) {
