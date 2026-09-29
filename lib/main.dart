@@ -1,4 +1,5 @@
 import 'package:device_preview/device_preview.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'data/sample_files.dart';
@@ -9,7 +10,12 @@ import 'theme.dart';
 void main() {
   AppState.init(sampleFiles);
   runApp(
-    DevicePreview(enabled: true, builder: (context) => const BlindSortApp()),
+    DevicePreview(
+      // Frame the app in a phone shell only on web. On a real device the
+      // frame would sit inside the actual phone screen, so it is off.
+      enabled: kIsWeb,
+      builder: (context) => const BlindSortApp(),
+    ),
   );
 }
 
@@ -23,8 +29,10 @@ class BlindSortApp extends StatelessWidget {
       builder: (context, mode, _) => MaterialApp(
         title: 'BlindSort',
         debugShowCheckedModeBanner: false,
-        locale: DevicePreview.locale(context),
-        builder: DevicePreview.appBuilder,
+        // DevicePreview.locale and DevicePreview.appBuilder only make sense
+        // when the preview wrapper is active. On device they are skipped.
+        locale: kIsWeb ? DevicePreview.locale(context) : null,
+        builder: kIsWeb ? DevicePreview.appBuilder : null,
         theme: appTheme,
         darkTheme: darkAppTheme,
         themeMode: mode,
