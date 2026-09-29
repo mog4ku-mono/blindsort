@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
 import '../constants/category_colors.dart';
+import '../constants/file_type_colors.dart';
 import '../data/sample_files.dart';
 import '../models/file_item.dart';
 import '../state/app_state.dart';
+import '../utils/voice_command_parser.dart';
+import '../widgets/app_drawer.dart';
 import '../widgets/category_navigation_item.dart';
 import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
@@ -13,9 +16,6 @@ import '../widgets/voice_search_overlay.dart';
 import 'file_browser_screen.dart';
 import 'file_details_screen.dart';
 import 'settings_screen.dart';
-import '../widgets/app_drawer.dart';
-import '../constants/file_type_colors.dart';
-import '../utils/voice_command_parser.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,22 +55,35 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _startVoiceSearch() async {
-    final intent = await showVoiceSearchOverlay(context);
-    if (!mounted || intent == null) return;
+  void _openBrowserWithSearch(String query) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FileBrowserScreen(initialSearch: query),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
-    switch (intent) {
-      case VoiceIntent.openBrowser:
-        _openBrowser();
-      case VoiceIntent.openSettings:
+  Future<void> _startVoiceSearch() async {
+    final command = await showVoiceSearchOverlay(context, sampleFiles);
+    if (!mounted || command == null) return;
+
+    switch (command.type) {
+      case VoiceCommandType.browser:
+        _openBrowser(category: command.value);
+      case VoiceCommandType.settings:
         _openSettings();
-      case VoiceIntent.openHome:
+      case VoiceCommandType.home:
         // Already on Home. Do nothing.
         break;
-      case VoiceIntent.search:
-        // Open the browser so the user can type or say a search term.
-        _openBrowser();
-      case VoiceIntent.unknown:
+      case VoiceCommandType.search:
+        _openBrowserWithSearch(command.value ?? '');
+      case VoiceCommandType.file:
+        final file = sampleFiles.firstWhere((f) => f.id == command.value);
+        _openDetails(file);
+      case VoiceCommandType.unknown:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Didn't catch that. Try 'open settings'."),
