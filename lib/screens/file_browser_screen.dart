@@ -8,6 +8,7 @@ import '../data/sample_folders.dart';
 import '../models/file_item.dart';
 import '../models/folder_item.dart';
 import '../state/app_state.dart';
+import '../utils/voice_command_parser.dart';
 import '../widgets/category_navigation_item.dart';
 import '../widgets/file_actions_sheet.dart';
 import '../widgets/file_list_item.dart';
@@ -20,8 +21,13 @@ enum SortMode { recent, name, size }
 
 class FileBrowserScreen extends StatefulWidget {
   final String? initialCategory;
+  final String? initialSearch;
 
-  const FileBrowserScreen({super.key, this.initialCategory});
+  const FileBrowserScreen({
+    super.key,
+    this.initialCategory,
+    this.initialSearch,
+  });
 
   @override
   State<FileBrowserScreen> createState() => _FileBrowserScreenState();
@@ -39,6 +45,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   void initState() {
     super.initState();
     _categoryFilter = widget.initialCategory;
+    _searchQuery = widget.initialSearch ?? '';
   }
 
   List<FolderItem> get _allFolders => [
@@ -151,8 +158,40 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   }
 
   Future<void> _openVoiceSearch() async {
-    await showVoiceSearchOverlay(context);
-    if (!mounted) return;
+    final command = await showVoiceSearchOverlay(context, sampleFiles);
+    if (!mounted || command == null) return;
+
+    switch (command.type) {
+      case VoiceCommandType.browser:
+        setState(() {
+          _categoryFilter = command.value;
+          _tabIndex = 0;
+        });
+      case VoiceCommandType.settings:
+        // The browser cannot open Settings directly. Pop back to Home so
+        // the user can tap the gear, and tell them why.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Returning to Home for Settings'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      case VoiceCommandType.home:
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      case VoiceCommandType.search:
+        setState(() => _searchQuery = command.value ?? '');
+      case VoiceCommandType.file:
+        final file = sampleFiles.firstWhere((f) => f.id == command.value);
+        _openDetails(file);
+      case VoiceCommandType.unknown:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Didn't catch that."),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   void _handleMoreMenu(String value) {

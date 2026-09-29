@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../constants/app_spacing.dart';
+import '../models/file_item.dart';
 import '../services/voice_service.dart';
 import '../utils/voice_command_parser.dart';
 
-/// Shows the voice search overlay. Returns the intent the user spoke, or
-/// null if they cancelled or speech was not recognised.
-Future<VoiceIntent?> showVoiceSearchOverlay(BuildContext context) async {
-  final result = await showGeneralDialog<VoiceIntent>(
+/// Shows the voice search overlay. Returns the parsed command, or null if
+/// the user cancelled or nothing was recognised.
+Future<VoiceCommand?> showVoiceSearchOverlay(
+  BuildContext context,
+  List<FileItem> files,
+) async {
+  final result = await showGeneralDialog<VoiceCommand>(
     context: context,
     barrierDismissible: false,
     barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -24,13 +28,15 @@ Future<VoiceIntent?> showVoiceSearchOverlay(BuildContext context) async {
         ),
       );
     },
-    pageBuilder: (_, _, _) => const _VoiceSearchScreen(),
+    pageBuilder: (_, _, _) => _VoiceSearchScreen(files: files),
   );
   return result;
 }
 
 class _VoiceSearchScreen extends StatefulWidget {
-  const _VoiceSearchScreen();
+  final List<FileItem> files;
+
+  const _VoiceSearchScreen({required this.files});
 
   @override
   State<_VoiceSearchScreen> createState() => _VoiceSearchScreenState();
@@ -40,8 +46,9 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
     with SingleTickerProviderStateMixin {
   static const _hints = [
     'Try saying: open settings',
-    'Try saying: open file browser',
-    'Try saying: go home',
+    'Try saying: show documents',
+    'Try saying: open lecture 3',
+    'Try saying: search for database',
   ];
 
   final VoiceService _voice = VoiceService();
@@ -87,15 +94,12 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
     await _voice.listen(
       onResult: (text, isFinal) {
         if (!mounted) return;
-        // Show what the microphone is hearing in real time.
         setState(() => _lastHeard = text);
-        // Reset the auto-submit window on every new phrase.
         _submitTimer?.cancel();
         if (isFinal && text.isNotEmpty) {
           _submitPhrase(text);
           return;
         }
-        // If the browser never sends a "final" flag, submit after a pause.
         if (text.isNotEmpty) {
           _submitTimer = Timer(const Duration(milliseconds: 1500), () {
             if (!mounted) return;
@@ -109,8 +113,8 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
   void _submitPhrase(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
-    final intent = VoiceCommandParser.parse(trimmed);
-    Navigator.of(context).pop(intent);
+    final command = VoiceCommandParser.parse(trimmed, widget.files);
+    Navigator.of(context).pop(command);
   }
 
   @override
