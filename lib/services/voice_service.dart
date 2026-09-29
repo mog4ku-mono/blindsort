@@ -1,7 +1,9 @@
 import 'package:speech_to_text/speech_to_text.dart';
 
 /// Wraps speech_to_text so the app can start and stop listening without
-/// knowing the package API. Text is handed back through a callback.
+/// knowing the package API. Every recognised phrase (interim or final) is
+/// handed back through the callback, so the overlay can show what the
+/// microphone is hearing as the user speaks.
 class VoiceService {
   final SpeechToText _speech = SpeechToText();
   bool _available = false;
@@ -15,19 +17,17 @@ class VoiceService {
   }
 
   Future<void> listen({
-    required void Function(String text) onResult,
-    void Function()? onDone,
+    required void Function(String text, bool isFinal) onResult,
   }) async {
     if (!_available) return;
     await _speech.listen(
       onResult: (result) {
-        if (result.finalResult) {
-          onResult(result.recognizedWords);
-        }
+        onResult(result.recognizedWords, result.finalResult);
       },
       listenOptions: SpeechListenOptions(
-        listenFor: const Duration(seconds: 12),
-        pauseFor: const Duration(seconds: 2),
+        listenFor: const Duration(seconds: 15),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
       ),
     );
   }

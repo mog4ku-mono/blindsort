@@ -38,21 +38,21 @@ class _VoiceSearchScreen extends StatefulWidget {
 
 class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
     with SingleTickerProviderStateMixin {
-  static const _statuses = [
-    'Listening...',
-    'Speak your command',
-    "I'm listening...",
+  static const _hints = [
     'Try saying: open settings',
-    'Say: open file browser',
+    'Try saying: open file browser',
+    'Try saying: go home',
   ];
 
   final VoiceService _voice = VoiceService();
   late final AnimationController _pulse;
   late final Animation<double> _pulseAnim;
-  Timer? _statusTimer;
+  Timer? _hintTimer;
   Timer? _autoDismiss;
-  int _statusIndex = 0;
+  Timer? _submitTimer;
+  int _hintIndex = 0;
   bool _speechReady = false;
+  String _lastHeard = '';
 
   @override
   void initState() {
@@ -65,11 +65,11 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
       begin: 0.9,
       end: 1.08,
     ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
-    _statusTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+    _hintTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
       if (!mounted) return;
-      setState(() => _statusIndex = (_statusIndex + 1) % _statuses.length);
+      setState(() => _hintIndex = (_hintIndex + 1) % _hints.length);
     });
-    _autoDismiss = Timer(const Duration(seconds: 12), () {
+    _autoDismiss = Timer(const Duration(seconds: 20), () {
       if (!mounted) return;
       Navigator.of(context).pop();
     });
@@ -80,34 +80,56 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
     final ok = await _voice.init();
     if (!mounted) return;
     if (!ok) {
-      setState(() {
-        _speechReady = false;
-        _statusIndex = 0;
-      });
+      setState(() => _speechReady = false);
       return;
     }
     setState(() => _speechReady = true);
     await _voice.listen(
-      onResult: (text) {
+      onResult: (text, isFinal) {
         if (!mounted) return;
-        final intent = VoiceCommandParser.parse(text);
-        Navigator.of(context).pop(intent);
+        // Show what the microphone is hearing in real time.
+        setState(() => _lastHeard = text);
+        // Reset the auto-submit window on every new phrase.
+        _submitTimer?.cancel();
+        if (isFinal && text.isNotEmpty) {
+          _submitPhrase(text);
+          return;
+        }
+        // If the browser never sends a "final" flag, submit after a pause.
+        if (text.isNotEmpty) {
+          _submitTimer = Timer(const Duration(milliseconds: 1500), () {
+            if (!mounted) return;
+            _submitPhrase(_lastHeard);
+          });
+        }
       },
     );
+  }
+
+  void _submitPhrase(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    final intent = VoiceCommandParser.parse(trimmed);
+    Navigator.of(context).pop(intent);
   }
 
   @override
   void dispose() {
     _voice.stop();
     _pulse.dispose();
-    _statusTimer?.cancel();
+    _hintTimer?.cancel();
     _autoDismiss?.cancel();
+    _submitTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final displayText = _lastHeard.isEmpty
+        ? (_speechReady ? _hints[_hintIndex] : 'Microphone not available')
+        : '"$_lastHeard"';
+
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -160,17 +182,23 @@ class _VoiceSearchScreenState extends State<_VoiceSearchScreen>
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
+                Text(
+                  _speechReady ? 'Listening...' : 'Microphone not available',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, anim) =>
-                      FadeTransition(opacity: anim, child: child),
                   child: Text(
-                    _speechReady
-                        ? _statuses[_statusIndex]
-                        : 'Microphone not available',
-                    key: ValueKey(_statusIndex),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
+                    displayText,
+                    key: ValueKey(displayText),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontStyle: _lastHeard.isEmpty
+                          ? FontStyle.normal
+                          : FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
                   ),
