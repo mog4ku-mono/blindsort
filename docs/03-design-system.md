@@ -85,16 +85,21 @@ Component rules:
 
 ## Changes since the last version
 
-- **2026-09-30 — Palette expanded.** The design system v2 shipped with a
-  light-only ColorScheme. The final build adds a dark theme generated from
-  the same seed. The light ColorScheme remains the default; the dark
-  ColorScheme is a scope addition, not a redesign.
-- **2026-09-30 — Component list grew.** The original list of eight reusable
-  widgets was expanded to thirteen. The additions were `AppDrawer`,
-  `FileActionsSheet`, `FileMultiPicker`, and `VoiceSearchOverlay`, all of
-  which came from features added during the finals build (drawer navigation,
-  long-press actions, folder file management, and voice search).
-- **2026-09-30 — `secondary` overridden to teal.** Material 3 generates a
+As of the final version, three changes have been made since Design System v2
+was submitted at midterms. Each entry lists the date the change was made in
+the code.
+
+- **2026-09-24 — `secondary` overridden to teal.** Material 3 generates a
   muted slate as the secondary role when the seed is blue. To preserve the
   teal visual identity from the mockup, `secondary`, `secondaryContainer`,
   and `onSecondaryContainer` are overridden explicitly in the `ColorScheme`.
+- **2026-09-26 — Dark theme added.** Design System v2 shipped with a
+  light-only ColorScheme. The final build adds a dark theme generated from
+  the same seed. The light ColorScheme remains the default; the dark
+  ColorScheme is a scope addition, not a redesign.
+- **2026-09-26 through 2026-09-28 — Component list grew.** The original list
+  of eight reusable widgets was expanded to thirteen. The additions were
+  `AppDrawer`, `FileActionsSheet`, `FileMultiPicker`, and
+  `VoiceSearchOverlay`, all of which came from features added during the
+  finals build (drawer navigation, long-press actions, folder file
+  management, and voice search).
