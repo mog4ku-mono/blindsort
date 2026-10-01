@@ -73,6 +73,22 @@ looks exactly like what it is.
 - **What I kept, what I changed, and why:** I kept the overall structure but chose the specific phrases the parser matches. I also changed the listen durations — the default `listenFor` of 8 seconds was too short for someone who needs to speak clearly, so I set it to 12 seconds with a 2-second silence timeout. The overlay now returns a `VoiceIntent` back to the Home screen, which decides where to route.
 - **Commit:** https://github.com/mog4ku-mono/blindsort/commit/5a121f9
 
+### 2026-09-29 - Expanding voice commands to categories, files, and search
+
+- **Tool:** ChatGPT and Claude
+- **What I asked for:** The first version of the voice feature only handled "open browser", "open settings", and "go home". I asked how to add commands for opening a category ("show documents"), opening a specific file ("open lecture 3"), and running a search ("search for database").
+- **What it gave back:** A starting structure for `lib/utils/voice_command_parser.dart` that returns a `VoiceCommand` with a type and an optional value, plus the changes needed in `home_screen.dart` and `file_browser_screen.dart` to route the new command types.
+- **What I kept, what I changed, and why:** I kept the substring-matching approach because it runs offline with no API key, and I decided which commands the parser should recognise. I chose the exact phrases each command matches, set how loose the file-name matching should be (score files by how many words from the phrase appear in the name, so "open lecture 3" works without needing the exact filename), and decided where each command routes in the app.
+- **Commit:** https://github.com/mog4ku-mono/blindsort/commit/0a56776
+
+### 2026-09-29 - Adding Android platform and microphone permissions
+
+- **Tool:** ChatGPT and Claude
+- **What I asked for:** The project only had a web platform from the course template. I asked what was needed to run the app on a real Android phone, and how to make the voice feature work on device.
+- **What it gave back:** The `flutter create . --platforms=android` command to add the Android folder, the exact permissions to add to `AndroidManifest.xml` (RECORD_AUDIO, INTERNET, BLUETOOTH, and a `<queries>` block so Android 11+ can find the speech recognizer), and a change to `main.dart` that only enables `device_preview` on web.
+- **What I kept, what I changed, and why:** I kept the manifest permissions and the `kIsWeb` gate in `main.dart`. I verified the phone showed no more fake phone frame after the change, and the web build still shows the frame. The voice feature on Android turned out not to work on my specific test phone — a Huawei device without Google services — but the permissions are correct for any Android phone that has them.
+- **Commit:** https://github.com/mog4ku-mono/blindsort/commit/5587eab
+
 ## 2. Where the AI got it wrong
 
 ### Case 1 - Fast-forward merges hid the branch history
@@ -104,12 +120,17 @@ looks exactly like what it is.
 - **Commit:** Submitted at midterms in August 2026. These documents predate the code repository.
 - **What they do and why they are built this way:** I wrote the proposal v2, the high-fidelity mockup, and the design system v2 for BlindSort during the midterm period, before any of the current implementation existed. The proposal covers the problem; blind and low-vision Android users struggle to find files by name alone; thus, the four-screen scope, the `shared_preferences` persistence choice, and the stretch goals. The mockup was made in Figma with high-fidelity screens for all four screens. The design system v2 lists the `#1565C0` seed color, the three text roles, the 8px spacing scale, and the eight reusable widgets by file path and constructor parameters. Every screen in the app was built against these documents.
 
-### Written by @mog4ku-mono - voice service, command parser, and overlay wiring
+### Written by @mog4ku-mono - voice command decisions and routing
 
-- **File:** `lib/services/voice_service.dart`, `lib/utils/voice_command_parser.dart`, `lib/widgets/voice_search_overlay.dart`
+- **File:** `lib/utils/voice_command_parser.dart`, `lib/services/voice_service.dart`, `lib/widgets/voice_search_overlay.dart`
 - **Commit:** https://github.com/mog4ku-mono/blindsort/commit/5a121f9
+- **What they do and why they are built this way:** These three files make voice navigation work. The file structure was scaffolded with AI assistance, but the decisions that shape the feature are mine:
 
-- **What they do and why they are built this way:** These three files make voice navigation work. `voice_service.dart` wraps the `speech_to_text` package so the rest of the app does not need to know its API — the overlay calls `listen()` and gets recognized text back through a callback. `voice_command_parser.dart` is a simple substring matcher that turns a phrase into one of five intents: open the File Browser, open Settings, go Home, search, or unknown. I chose substring matching on purpose because it works offline and does not need an API key. `voice_search_overlay.dart` was rewritten from a static tease into a screen that opens the microphone when it appears, hands the recognized phrase to the parser, and returns the result to the caller. I picked `listenFor: 12` seconds and `pauseFor: 2` seconds because a blind user may need longer to speak a clear sentence, and a short silence should end the command rather than keep waiting. This is the one part of the project I built from the structure up rather than accepting an AI draft, I decided what commands exist, how the phrase matching works, and where each intent routes.
+  - **The five commands.** I decided which phrases the app should understand: opening the File Browser (with or without a category), opening Settings, going Home, running a search, and opening a specific file. Nothing else routes.
+  - **The phrase list.** I chose the exact words each command matches — "browser" and "files" for the File Browser, "document"/"pdf" for the Documents category, "image"/"photo"/"picture" for Images, and so on.
+  - **The file-name matching.** I chose to score files by how many words from the spoken phrase appear in the file name, so "open lecture 3" matches `Lecture_3_Database.pdf` without requiring the user to say the whole filename.
+  - **The listen timings.** I set `listenFor` to 12 seconds and `pauseFor` to 2 seconds instead of the plugin defaults, because a blind user may need longer to speak clearly and a short silence should end the command.
+  - **The routing.** Every `VoiceCommandType` has an explicit destination in `home_screen.dart` and `file_browser_screen.dart`. I decided which command opens which screen.
 
 ### Written by @mog4ku-mono - design decisions across the four screens
 
