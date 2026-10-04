@@ -2,14 +2,13 @@
 
 *An accessibility-first Android file manager that helps blind and visually impaired users locate, understand, and organize downloaded files through screen-reader-friendly navigation, file insights, virtual categorization, and voice-assisted search.*
 
-> Week 2 status: the four approved screens are built and reachable. File
-> Browser, File Details, Settings, and the App Drawer are working. Voice
-> Search is a visual teaser only. Disk persistence and live AI insights are
-> still in progress.
+**Live demo:** [Open BlindSort →](https://mog4ku-mono.github.io/blindsort/)
 
-**Live demo:** https://mog4ku-mono.github.io/blindsort/
+**Demo video:** [Watch the demo →](https://drive.google.com/file/d/1XpMe_UOwm91PgfNXY2Qcc6uXIdhhW5Ly/view?usp=sharing) (see also [`docs/05-demo-video.md`](docs/05-demo-video.md) for timestamps)
 
-**Demo video:** not yet available
+**Presentation slides:** [View the slides →](https://drive.google.com/file/d/1LlCTHZ3fnrLCmuSeTkWQCGryMoD7f2KS/view?usp=sharing)
+
+**Square image:** [View the square image →](https://drive.google.com/file/d/1-aKQ7hr8zh2MDU8cIsyCbObECk3efev5/view?usp=sharing)
 
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
 
@@ -18,12 +17,15 @@
 This repository lives in the author's own GitHub account and is public on
 purpose for coursework review. No name, student number, or personal email
 appears in any file.
-
 ---
 
 ## Screenshots
 
+![BlindSort](docs/assets/screenshots/00-square-image.png)
+
 Captured from the current Flutter web build at a 390 × 844 phone viewport.
+
+### The four screens
 
 | Home Dashboard | File Browser |
 | --- | --- |
@@ -32,6 +34,16 @@ Captured from the current Flutter web build at a 390 × 844 phone viewport.
 | File Details | Settings |
 | --- | --- |
 | ![File Details](docs/assets/screenshots/03-file-details.png) | ![Settings](docs/assets/screenshots/04-settings.png) |
+
+### Voice search and dark mode
+
+| Voice search listening | Home in dark mode |
+| --- | --- |
+| ![Voice search overlay](docs/assets/screenshots/05-voice-search.png) | ![Home in dark mode](docs/assets/screenshots/06-dark-mode-home.png) |
+
+| App drawer | File actions |
+| --- | --- |
+| ![App drawer](docs/assets/screenshots/07-app-drawer.png) | ![File actions sheet](docs/assets/screenshots/08-file-actions.png) |
 
 ## What it does
 
@@ -100,20 +112,26 @@ lib/
 │   ├── file_browser_screen.dart      # categories/folders tabs, filter, sort
 │   ├── file_details_screen.dart      # hero, summary, swipeable preview, actions
 │   └── settings_screen.dart          # six cards, inline sheets, save/revert
+├── services/
+│   └── voice_service.dart            # wraps speech_to_text for the overlay
 ├── state/
 │   └── app_state.dart                # shared session state and theme notifier
+├── utils/
+│   └── voice_command_parser.dart     # regex + scoring to turn speech into a route
 └── widgets/
     ├── app_drawer.dart               # navigation, Recently Deleted, Storage, About
+    ├── app_header.dart
     ├── category_navigation_item.dart
     ├── empty_state.dart
     ├── file_actions_sheet.dart       # shared long-press menu for files
     ├── file_list_item.dart
     ├── file_multi_picker.dart        # multi-select for folder contents
     ├── folder_list_item.dart
+    ├── metadata_row.dart
     ├── primary_button.dart
     ├── section_card.dart
     ├── settings_item.dart
-    └── voice_search_overlay.dart     # full-screen listening tease
+    └── voice_search_overlay.dart     # full-screen voice listening UI
 ```
 
 ## Privacy and secrets
@@ -131,9 +149,11 @@ described in the proposal was not attempted, so no Gemini key exists.
   the session. Reloading the page resets favorites, custom folders, deleted
   items, and settings back to their defaults. The `shared_preferences` spike
   is the next task.
-- **Voice Search is a visual tease.** The overlay shows a pulsing mic and a
-  cycling status message, then opens the File Browser after a delay. Speech
-  recognition is not wired.
+- **Voice works on web, not on my test phone.** Voice commands run through
+  the browser's Web Speech API on web and Android's `SpeechRecognizer` on
+  device. My test phone is a Huawei without Google services, so native voice
+  can't reach a speech recognizer on that specific device. The code and
+  permissions are correct for any Android phone with Google services.
 - **File Insights uses sample data.** The AI Summary block on File Details is
   driven by `file_insights.dart`, not a live model. A Gemini integration is a
   stretch goal.
@@ -148,8 +168,9 @@ described in the proposal was not attempted, so no Gemini key exists.
 - **No screen reader test on a real device.** Every interactive widget has a
   `Semantics` label, but no TalkBack session has been run end-to-end.
 
-Next: the persistence spike, then the widget test fix, then filling in
-`AI-USAGE.md` for the finals badge.
+Next: the `shared_preferences` persistence spike, a live File Insights
+integration through a server proxy, and native Android file access on a
+device with Google services. The scanner is already written.
 
 ## Project documentation
 
