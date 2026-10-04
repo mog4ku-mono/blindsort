@@ -14,9 +14,6 @@
 
 **Author:** [mog4ku-mono](https://github.com/mog4ku-mono)
 
-This repository lives in the author's own GitHub account and is public on
-purpose for coursework review. No name, student number, or personal email
-appears in any file.
 ---
 
 ## Screenshots
